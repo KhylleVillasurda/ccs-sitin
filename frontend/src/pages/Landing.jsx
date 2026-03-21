@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { useAuth } from '../hooks/useAuth'
+import { useAuth } from '../hooks/useAuth.jsx'
 import './Landing.css'
 
 export default function Landing() {
@@ -110,20 +110,20 @@ export default function Landing() {
                   <img src="/ccs-logo.jpg" alt="CCS" style={{ width: 28, height: 28, borderRadius: '50%', objectFit: 'cover' }} />
                   <span style={{ fontSize: '0.6rem', color: 'var(--fg-dim)', lineHeight: 1.2 }}>CICS<br/>Admin</span>
                 </div>
-                <div className="mock-nav-item active">🏠 Home</div>
-                <div className="mock-nav-item">👥 Students</div>
-                <div className="mock-nav-item">💻 Sit-in</div>
-                <div className="mock-nav-item">📋 Records</div>
-                <div className="mock-nav-item">📊 Reports</div>
+                <div className="mock-nav-item active"><i className="bi bi-house-fill"></i> Home</div>
+                <div className="mock-nav-item"><i className="bi bi-people-fill"></i> Students</div>
+                <div className="mock-nav-item"><i className="bi bi-laptop"></i> Sit-in</div>
+                <div className="mock-nav-item"><i className="bi bi-clipboard-check"></i> Records</div>
+                <div className="mock-nav-item"><i className="bi bi-bar-chart-fill"></i> Reports</div>
               </div>
               <div className="mock-main">
                 <div className="mock-stats">
                   <div className="mock-stat-card">
-                    <div className="mock-stat-icon" style={{background:'rgba(230,152,117,0.15)'}}>👥</div>
+                    <div className="mock-stat-icon" style={{background:'rgba(230,152,117,0.15)'}}><i className="bi bi-people-fill"></i></div>
                     <div><div className="mock-stat-val">38</div><div className="mock-stat-lbl">Students</div></div>
                   </div>
                   <div className="mock-stat-card">
-                    <div className="mock-stat-icon" style={{background:'rgba(167,192,128,0.15)'}}>✅</div>
+                    <div className="mock-stat-icon" style={{background:'rgba(167,192,128,0.15)'}}><i className="bi bi-check-circle-fill"></i></div>
                     <div><div className="mock-stat-val">12</div><div className="mock-stat-lbl">Sitting In</div></div>
                   </div>
                 </div>
@@ -207,12 +207,12 @@ export default function Landing() {
           </div>
           <div className="features-grid">
             {[
-              { icon:'🔐', title:'Secure Auth', desc:'Role-based access for admins and students with JWT token authentication.' },
-              { icon:'📊', title:'Live Statistics', desc:'Real-time dashboard showing current sit-ins, totals, and session counts.' },
-              { icon:'🗂️', title:'Student Registry', desc:'Add, edit, and manage all registered students with full CRUD operations.' },
-              { icon:'📋', title:'Sit-in Records', desc:'Track every session with timestamps, purpose (C++, Java, PHP…), and lab room.' },
-              { icon:'📣', title:'Announcements', desc:'Admin can post announcements visible to all students on their dashboard.' },
-              { icon:'📈', title:'Reports', desc:'Visual breakdowns of lab activity by programming purpose and room number.' },
+              { icon:<i className="bi bi-shield-lock-fill"></i>, title:'Secure Auth', desc:'Role-based access for admins and students with JWT token authentication.' },
+              { icon:<i className="bi bi-bar-chart-fill"></i>, title:'Live Statistics', desc:'Real-time dashboard showing current sit-ins, totals, and session counts.' },
+              { icon:<i className="bi bi-folder-fill"></i>, title:'Student Registry', desc:'Add, edit, and manage all registered students with full CRUD operations.' },
+              { icon:<i className="bi bi-clipboard-check"></i>, title:'Sit-in Records', desc:'Track every session with timestamps, purpose (C++, Java, PHP…), and lab room.' },
+              { icon:<i className="bi bi-megaphone-fill"></i>, title:'Announcements', desc:'Admin can post announcements visible to all students on their dashboard.' },
+              { icon:<i className="bi bi-graph-up"></i>, title:'Reports', desc:'Visual breakdowns of lab activity by programming purpose and room number.' },
             ].map(f => (
               <div key={f.title} className="feature-card">
                 <div className="feature-icon">{f.icon}</div>
