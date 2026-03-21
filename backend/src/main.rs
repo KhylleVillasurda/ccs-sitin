@@ -31,6 +31,7 @@ async fn rocket() -> _ {
             students::list,
             students::get_by_id,
             students::update,
+            students::update_profile,   // new: student self-edit
             students::delete,
             students::add,
             students::reset_all_sessions,
