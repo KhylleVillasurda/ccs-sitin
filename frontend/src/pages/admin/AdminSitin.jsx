@@ -33,16 +33,16 @@ function SitInModal({ onClose, onStarted }) {
       <div className="modal">
         <div className="modal-header">
           <span className="modal-title">New Sit-in</span>
-          <button className="modal-close" onClick={onClose}>✕</button>
+          <button className="modal-close" onClick={onClose}><i className="bi bi-x-lg" /></button>
         </div>
-        {error && <div className="alert alert-error">⚠ {error}</div>}
+        {error && <div className="alert alert-error"><i className="bi bi-exclamation-triangle-fill" /> {error}</div>}
         <div className="form-group">
           <label className="label">Student ID Number</label>
           <div style={{ display:'flex', gap:'0.5rem' }}>
             <input className="input" value={search} onChange={e=>setSearch(e.target.value)}
               placeholder="Enter student ID…" onKeyDown={e=>e.key==='Enter'&&findStudent()}/>
             <button className="btn btn-ghost" onClick={findStudent} disabled={searching} style={{ flexShrink:0 }}>
-              {searching?'…':'<i className="bi bi-search" /> Find'}
+              {searching?'…':<><i className="bi bi-search" /> Find</>}
             </button>
           </div>
         </div>
