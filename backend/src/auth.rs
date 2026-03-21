@@ -9,7 +9,7 @@ use crate::{db::Db, models::*};
 
 pub const JWT_SECRET: &[u8] = b"ccs_sitin_secret_key_2024";
 
-// ── Custom request guard for Bearer token ──────────────────────────────────
+// ── Custom request guard ───────────────────────────────────────────────────
 
 pub struct BearerToken(pub String);
 
@@ -22,7 +22,7 @@ impl<'r> FromRequest<'r> for BearerToken {
             Some(h) if h.starts_with("Bearer ") => {
                 Outcome::Success(BearerToken(h[7..].to_string()))
             }
-            _ => Outcome::Error((Status::Unauthorized, "Missing or invalid Authorization header")),
+            _ => Outcome::Error((Status::Unauthorized, "Missing Authorization header")),
         }
     }
 }
@@ -42,12 +42,8 @@ pub fn generate_token(user: &User) -> String {
         exp: expiry,
     };
 
-    encode(
-        &JwtHeader::default(),
-        &claims,
-        &EncodingKey::from_secret(JWT_SECRET),
-    )
-    .unwrap_or_default()
+    encode(&JwtHeader::default(), &claims, &EncodingKey::from_secret(JWT_SECRET))
+        .unwrap_or_default()
 }
 
 pub fn verify_token(token: &str) -> Option<Claims> {
@@ -63,9 +59,9 @@ pub fn verify_token(token: &str) -> Option<Claims> {
 
 pub fn require_admin(token: &str) -> Result<Claims, (Status, Json<ApiError>)> {
     let claims = verify_token(token)
-        .ok_or((Status::Unauthorized, Json(ApiError { error: "Invalid token".into() })))?;
+        .ok_or((Status::Unauthorized, Json(ApiError { error: "Invalid or expired token".into() })))?;
     if claims.role != "admin" {
-        return Err((Status::Forbidden, Json(ApiError { error: "Admin only".into() })));
+        return Err((Status::Forbidden, Json(ApiError { error: "Admin access required".into() })));
     }
     Ok(claims)
 }
@@ -77,22 +73,40 @@ pub async fn login(
     mut db: Connection<Db>,
     req: Json<LoginRequest>,
 ) -> Result<Json<AuthResponse>, (Status, Json<ApiError>)> {
+
     let user: Option<User> = sqlx::query_as(
         "SELECT * FROM users WHERE id_number = ?",
     )
     .bind(&req.id_number)
     .fetch_optional(&mut **db)
     .await
-    .map_err(|_| (Status::InternalServerError, Json(ApiError { error: "DB error".into() })))?;
+    .map_err(|e| {
+        // Detailed error so user/dev can diagnose MySQL issues
+        let msg = e.to_string();
+        let friendly = if msg.contains("doesn't exist") || msg.contains("Unknown database") {
+            "Database 'ccs_sitin' not found — run xampp-setup.sql in phpMyAdmin first"
+        } else if msg.contains("Access denied") {
+            "MySQL access denied — check credentials in Rocket.toml"
+        } else if msg.contains("connection refused") || msg.contains("timed out") {
+            "Cannot reach MySQL — make sure MySQL is running in XAMPP Control Panel"
+        } else {
+            "Database query failed — check MySQL is running and ccs_sitin database exists"
+        };
+        eprintln!("LOGIN DB ERROR: {}", msg);
+        (Status::InternalServerError, Json(ApiError { error: friendly.into() }))
+    })?;
 
     let user = user.ok_or((
         Status::Unauthorized,
-        Json(ApiError { error: "Invalid credentials".into() }),
+        Json(ApiError { error: "Invalid ID number or password".into() }),
     ))?;
 
     let valid = bcrypt::verify(&req.password, &user.password).unwrap_or(false);
     if !valid {
-        return Err((Status::Unauthorized, Json(ApiError { error: "Invalid credentials".into() })));
+        return Err((
+            Status::Unauthorized,
+            Json(ApiError { error: "Invalid ID number or password".into() }),
+        ));
     }
 
     let token = generate_token(&user);
@@ -104,20 +118,26 @@ pub async fn register(
     mut db: Connection<Db>,
     req: Json<RegisterRequest>,
 ) -> Result<Json<AuthResponse>, (Status, Json<ApiError>)> {
+
     let exists: (i64,) = sqlx::query_as(
         "SELECT COUNT(*) FROM users WHERE id_number = ?",
     )
     .bind(&req.id_number)
     .fetch_one(&mut **db)
     .await
-    .map_err(|_| (Status::InternalServerError, Json(ApiError { error: "DB error".into() })))?;
+    .map_err(|e| {
+        eprintln!("REGISTER DB ERROR: {}", e);
+        (Status::InternalServerError, Json(ApiError {
+            error: "Database error — ensure MySQL is running and ccs_sitin database exists".into()
+        }))
+    })?;
 
     if exists.0 > 0 {
         return Err((Status::Conflict, Json(ApiError { error: "ID Number already registered".into() })));
     }
 
     let hashed = bcrypt::hash(&req.password, bcrypt::DEFAULT_COST)
-        .map_err(|_| (Status::InternalServerError, Json(ApiError { error: "Hashing error".into() })))?;
+        .map_err(|_| (Status::InternalServerError, Json(ApiError { error: "Password hashing failed".into() })))?;
 
     sqlx::query(
         "INSERT INTO users (id_number, last_name, first_name, middle_name, course_level, \
@@ -134,13 +154,16 @@ pub async fn register(
     .bind(req.address.as_deref().unwrap_or(""))
     .execute(&mut **db)
     .await
-    .map_err(|_| (Status::InternalServerError, Json(ApiError { error: "Failed to register".into() })))?;
+    .map_err(|e| {
+        eprintln!("REGISTER INSERT ERROR: {}", e);
+        (Status::InternalServerError, Json(ApiError { error: "Failed to create account".into() }))
+    })?;
 
     let user: User = sqlx::query_as("SELECT * FROM users WHERE id_number = ?")
         .bind(&req.id_number)
         .fetch_one(&mut **db)
         .await
-        .map_err(|_| (Status::InternalServerError, Json(ApiError { error: "DB error".into() })))?;
+        .map_err(|_| (Status::InternalServerError, Json(ApiError { error: "Failed to fetch new user".into() })))?;
 
     let token = generate_token(&user);
     Ok(Json(AuthResponse { token, user: user.into() }))
