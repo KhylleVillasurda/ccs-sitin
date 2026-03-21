@@ -1,97 +1,74 @@
 # CCS Sit-in Monitoring System
-
 **University of Cebu — College of Information & Computer Science**
 
-A full-stack web application for managing student computer lab sit-ins.
+Full-stack web app: React frontend · Rust/Rocket backend · MySQL (XAMPP)
 
 ---
 
 ## Tech Stack
-
-| Layer     | Technology                          |
-|-----------|-------------------------------------|
-| Frontend  | React 18 + Vite + React Router v6   |
-| Backend   | Rust + Rocket v0.5                  |
-| Database  | SQLite (via sqlx)                   |
-| Auth      | JWT (jsonwebtoken) + bcrypt         |
-| Theme     | Everforest Dark Medium              |
-
----
-
-## Project Structure
-
-```
-ccs-sitin/
-├── backend/               # Rust/Rocket API
-│   ├── Cargo.toml
-│   ├── Rocket.toml
-│   └── src/
-│       ├── main.rs
-│       ├── db.rs          # SQLite init & pool
-│       ├── models.rs      # Shared data types
-│       ├── cors.rs        # CORS fairing
-│       ├── auth.rs        # Login / Register
-│       ├── students.rs    # Student CRUD
-│       ├── sitin.rs       # Sit-in management
-│       ├── announcements.rs
-│       └── reports.rs
-└── frontend/              # React app
-    ├── public/
-    │   ├── ccs-logo.jpg
-    │   └── uc-logo.png
-    ├── src/
-    │   ├── api.js         # Axios client
-    │   ├── App.jsx        # Routes
-    │   ├── index.css      # Global Everforest theme
-    │   ├── hooks/
-    │   │   └── useAuth.js
-    │   └── pages/
-    │       ├── Landing.jsx / .css
-    │       ├── Login.jsx
-    │       ├── Register.jsx
-    │       ├── Auth.css
-    │       ├── admin/
-    │       │   ├── AdminLayout.jsx / .css
-    │       │   ├── AdminHome.jsx
-    │       │   ├── AdminStudents.jsx
-    │       │   ├── AdminSitin.jsx
-    │       │   ├── AdminRecords.jsx
-    │       │   └── AdminReports.jsx
-    │       └── student/
-    │           ├── StudentDashboard.jsx
-    │           └── StudentDashboard.css
-    ├── index.html
-    └── package.json
-```
+| Layer    | Technology                        |
+|----------|-----------------------------------|
+| Frontend | React 18 + Vite + React Router v6 |
+| Backend  | Rust + Rocket v0.5                |
+| Database | MySQL / MariaDB (via XAMPP)       |
+| Auth     | JWT + bcrypt                      |
+| Theme    | Everforest Dark Medium            |
 
 ---
 
-## Setup & Running
+## XAMPP Setup (Database)
+
+### Step 1 — Start XAMPP
+1. Open **XAMPP Control Panel**
+2. Start **Apache** and **MySQL**
+
+### Step 2 — Create the database
+**Option A — phpMyAdmin (easiest)**
+1. Open `http://localhost/phpmyadmin`
+2. Click **Import** → choose the file `xampp-setup.sql` from this folder
+3. Click **Go**
+
+**Option B — MySQL console**
+```bash
+# Open XAMPP shell or Windows CMD in C:\xampp\mysql\bin\
+mysql -u root < C:\path\to\ccs-sitin\xampp-setup.sql
+```
+
+### Step 3 — Configure the connection
+Open `backend/Rocket.toml` and set your MySQL credentials:
+```toml
+[default.databases.main]
+url = "mysql://root:@localhost:3306/ccs_sitin"
+#              ^^^^  ^ change these if you have a password
+#              user  password
+```
+> Default XAMPP MySQL: user = `root`, password = (empty)
+
+---
+
+## Running the Backend
 
 ### Prerequisites
-- [Rust](https://rustup.rs/) (stable)
-- [Node.js](https://nodejs.org/) v18+
-- SQLite (usually pre-installed on Linux/macOS)
-
-### 1. Backend
+- [Rust](https://rustup.rs/) stable
+- XAMPP MySQL running (see above)
 
 ```bash
 cd backend
 
-# Install SQLite dev library (Ubuntu/Debian)
-sudo apt install libsqlite3-dev
+# Windows — install MySQL C connector if needed
+# Download from: https://dev.mysql.com/downloads/connector/c/
+# Or use: winget install Oracle.MySQL
 
-# Run (creates ccs_sitin.db automatically)
 cargo run
 ```
 
-The API will start at **http://localhost:8000**
+The API starts at **http://localhost:8000**
 
-**Default Admin credentials:**
-- ID Number: `admin`
-- Password: `admin123`
+**Default admin login:** ID `admin` / Password `admin123`
 
-### 2. Frontend
+---
+
+## Running the Frontend
 
 ```bash
 cd frontend
@@ -99,70 +76,100 @@ npm install
 npm run dev
 ```
 
-The app will open at **http://localhost:5173**
+Opens at **http://localhost:5173**
 
 ---
 
 ## API Endpoints
 
 ### Auth
-| Method | Path              | Description        | Auth Required |
-|--------|-------------------|--------------------|---------------|
-| POST   | /api/auth/login   | Login              | No            |
-| POST   | /api/auth/register| Register student   | No            |
+| Method | Path                  | Auth |
+|--------|-----------------------|------|
+| POST   | /api/auth/login       | No   |
+| POST   | /api/auth/register    | No   |
 
-### Students (Admin only)
-| Method | Path                      | Description           |
-|--------|---------------------------|-----------------------|
-| GET    | /api/students/            | List all students     |
-| GET    | /api/students/:id         | Get student by ID     |
-| POST   | /api/students/            | Add student           |
-| PUT    | /api/students/:id         | Update student        |
-| DELETE | /api/students/:id         | Delete student        |
-| POST   | /api/students/reset-sessions | Reset all sessions |
+### Students
+| Method | Path                            | Who          |
+|--------|---------------------------------|--------------|
+| GET    | /api/students/                  | Admin        |
+| GET    | /api/students/:id               | Admin / Self |
+| POST   | /api/students/                  | Admin        |
+| PUT    | /api/students/:id               | Admin        |
+| PUT    | /api/students/profile/:id       | Student self |
+| DELETE | /api/students/:id               | Admin        |
+| POST   | /api/students/reset-sessions    | Admin        |
 
-### Sit-in (Admin only)
-| Method | Path                  | Description            |
-|--------|-----------------------|------------------------|
-| POST   | /api/sitin/start      | Start a sit-in session |
-| POST   | /api/sitin/end/:id    | End a sit-in session   |
-| GET    | /api/sitin/current    | Active sit-ins         |
-| GET    | /api/sitin/records    | All records            |
-| GET    | /api/sitin/student/:id| Student's own records  |
+### Sit-in
+| Method | Path                      | Who   |
+|--------|---------------------------|-------|
+| POST   | /api/sitin/start          | Admin |
+| POST   | /api/sitin/end/:id        | Admin |
+| GET    | /api/sitin/current        | Admin |
+| GET    | /api/sitin/records        | Admin |
+| GET    | /api/sitin/student/:id    | Both  |
 
 ### Reports & Announcements
-| Method | Path                        | Description          |
-|--------|-----------------------------|----------------------|
-| GET    | /api/reports/stats          | Dashboard stats      |
-| GET    | /api/reports/by-purpose     | Breakdown by purpose |
-| GET    | /api/reports/by-lab         | Breakdown by lab     |
-| GET    | /api/announcements/         | List announcements   |
-| POST   | /api/announcements/         | Post announcement    |
-| DELETE | /api/announcements/:id      | Delete announcement  |
+| Method | Path                        | Who   |
+|--------|-----------------------------|-------|
+| GET    | /api/reports/stats          | Admin |
+| GET    | /api/reports/by-purpose     | Admin |
+| GET    | /api/reports/by-lab         | Admin |
+| GET    | /api/announcements/         | All   |
+| POST   | /api/announcements/         | Admin |
+| DELETE | /api/announcements/:id      | Admin |
 
 ---
 
 ## Features
 
 ### Admin Dashboard
-- 📊 Live statistics (registered students, active sit-ins, total)
-- 📈 Session breakdown by programming purpose (bar charts)
-- 📣 Post/delete announcements
-- 👥 Full student management (add, edit, delete, search, reset sessions)
-- 💻 Start/end sit-in sessions by searching student ID
-- 📋 Complete sit-in records with filtering by status
-- 📊 Reports: sessions by purpose and by lab room
+- 📊 Live stats (students, active sit-ins, totals)
+- 📈 Sessions by purpose + lab (bar charts)
+- 📣 Post / delete announcements
+- 👥 Student management — add, edit, delete, search, reset sessions
+- 💻 Start / end sit-in sessions by student ID
+- 📋 Full records with status filter
+- 📊 Reports breakdown
 
 ### Student Dashboard
-- 🎫 Remaining session count
+- 🎫 Remaining sessions counter
 - ✅ Active sit-in status
+- 📣 Announcements feed
 - 📋 Personal sit-in history
-- 📣 View admin announcements
+- ✏️ Edit profile (name, course, email, address, password)
+  - Student ID is always read-only
 
 ---
 
-## Default Lab Rooms
-524, 526, 528, 530, 542
-
-## Supported Purposes
-C Programming, Java, PHP, ASP.Net, C#, Python, Database, Web Development, Other
+## Project Structure
+```
+ccs-sitin/
+├── xampp-setup.sql          ← run this in phpMyAdmin FIRST
+├── backend/
+│   ├── Cargo.toml
+│   ├── Rocket.toml          ← edit DB credentials here
+│   └── src/
+│       ├── main.rs
+│       ├── db.rs
+│       ├── models.rs
+│       ├── auth.rs
+│       ├── students.rs      ← includes /profile/:id endpoint
+│       ├── sitin.rs
+│       ├── announcements.rs
+│       ├── reports.rs
+│       └── cors.rs
+└── frontend/
+    ├── public/
+    │   ├── ccs-logo.jpg
+    │   └── uc-logo.png
+    └── src/
+        ├── pages/
+        │   ├── Landing.jsx
+        │   ├── Login.jsx
+        │   ├── Register.jsx
+        │   ├── admin/        (Home, Students, Sitin, Records, Reports, Layout)
+        │   └── student/
+        │       ├── StudentDashboard.jsx
+        │       └── EditProfile.jsx    ← new
+        └── hooks/useAuth.jsx
+```
