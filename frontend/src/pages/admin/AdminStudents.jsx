@@ -167,7 +167,7 @@ export default function AdminStudents() {
       <div className="card">
         <div style={{ marginBottom:'1rem' }}>
           <div className="search-bar" style={{ maxWidth:'320px' }}>
-            <span style={{ color:'var(--fg-dim)', fontSize:'0.9rem' }}><i class="bi bi-search"></i></span>
+            <span style={{ color:'var(--fg-dim)', fontSize:'0.9rem' }}>🔍</span>
             <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search by name, ID, course…"/>
           </div>
         </div>

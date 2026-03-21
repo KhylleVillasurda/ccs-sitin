@@ -55,7 +55,7 @@ export default function Register() {
         <h1 className="auth-title">Create Account</h1>
         <p className="auth-sub">Register for CCS Sit-in Monitor</p>
 
-        {error && <div className="alert alert-error"><i className="bi bi-exclamation-triangle-fill" /> {error}</div>}
+        {error && <div className="alert alert-error">⚠ {error}</div>}
 
         <form onSubmit={handleSubmit} className="auth-form">
           <div className="form-group">
