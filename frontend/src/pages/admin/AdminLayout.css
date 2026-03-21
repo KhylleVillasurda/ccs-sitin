@@ -1,0 +1,80 @@
+.admin-layout {
+  display: grid;
+  grid-template-columns: 235px 1fr;
+  min-height: 100vh;
+}
+
+.sidebar {
+  background: var(--bg1);
+  border-right: 1px solid var(--border);
+  display: flex; flex-direction: column;
+  position: fixed; top: 0; left: 0;
+  height: 100vh; width: 235px;
+  z-index: 50;
+}
+
+/* Brand with dual logos */
+.sidebar-brand {
+  display: flex; align-items: center; gap: 0.75rem;
+  padding: 1rem 1.2rem;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg2);
+}
+.sidebar-logos {
+  display: flex; align-items: center;
+  position: relative; flex-shrink: 0;
+  width: 48px; height: 36px;
+}
+.sb-ccs-logo {
+  width: 32px; height: 32px;
+  border-radius: 50%; object-fit: cover;
+  border: 1.5px solid var(--border);
+  position: absolute; left: 0; top: 0;
+  z-index: 2;
+}
+.sb-uc-logo {
+  height: 22px; width: auto; object-fit: contain;
+  position: absolute; right: 0; bottom: 0;
+  z-index: 1;
+  filter: brightness(1.15) saturate(0.9);
+}
+.sidebar-name {
+  font-family: 'Playfair Display', serif;
+  font-size: 0.9rem; font-weight: 600; color: var(--fg); line-height: 1.2;
+}
+.sidebar-role { font-size: 0.65rem; color: var(--accent); text-transform: uppercase; letter-spacing: 0.07em; margin-top: 0.1rem; }
+
+.sidebar-nav { flex: 1; padding: 1rem 0.75rem; display: flex; flex-direction: column; gap: 0.15rem; }
+.sidebar-link {
+  display: flex; align-items: center; gap: 0.65rem;
+  padding: 0.6rem 0.85rem; border-radius: 7px;
+  color: var(--fg-dim); font-size: 0.875rem; font-weight: 500;
+  transition: all 0.15s; text-decoration: none;
+}
+.sidebar-link:hover { background: var(--bg2); color: var(--fg); }
+.sidebar-link.active { background: rgba(230,152,117,0.12); color: var(--accent); border: 1px solid rgba(230,152,117,0.2); }
+.sidebar-icon { font-size: 1rem; width: 20px; text-align: center; }
+
+.sidebar-footer {
+  border-top: 1px solid var(--border);
+  padding: 1rem 1.25rem;
+  display: flex; flex-direction: column; gap: 0.75rem;
+}
+.sidebar-user { display: flex; align-items: center; gap: 0.65rem; }
+.sidebar-avatar {
+  width: 32px; height: 32px; border-radius: 50%;
+  background: var(--accent); color: var(--bg);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.75rem; font-weight: 700; flex-shrink: 0;
+}
+.sidebar-user-name { font-size: 0.8rem; font-weight: 600; color: var(--fg); }
+.sidebar-user-role { font-size: 0.7rem; color: var(--fg-dim); }
+.sidebar-logout { width: 100%; justify-content: center; }
+
+.admin-main { margin-left: 235px; padding: 2rem 2.5rem; min-height: 100vh; background: var(--bg); }
+
+@media (max-width: 768px) {
+  .admin-layout { grid-template-columns: 1fr; }
+  .sidebar { display: none; }
+  .admin-main { margin-left: 0; padding: 1rem; }
+}
