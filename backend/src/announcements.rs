@@ -7,12 +7,12 @@ pub async fn list(
     mut db: Connection<Db>,
 ) -> Result<Json<Vec<Announcement>>, (Status, Json<ApiError>)> {
     let items: Vec<Announcement> = sqlx::query_as(
-        "SELECT * FROM announcements ORDER BY created_at DESC",
-    )
-    .fetch_all(&mut **db)
-    .await
-    .map_err(|_| (Status::InternalServerError, Json(ApiError { error: "DB error".into() })))?;
-
+        "SELECT * FROM announcements ORDER BY created_at DESC"
+    ).fetch_all(&mut **db).await
+    .map_err(|e| {
+        eprintln!("ANNOUNCEMENTS LIST ERROR: {}", e);
+        (Status::InternalServerError, Json(ApiError { error: "Database error".into() }))
+    })?;
     Ok(Json(items))
 }
 
@@ -23,14 +23,11 @@ pub async fn create(
     token: BearerToken,
 ) -> Result<Json<ApiSuccess>, (Status, Json<ApiError>)> {
     require_admin(&token.0)?;
-
     sqlx::query("INSERT INTO announcements (title, content) VALUES (?, ?)")
         .bind(req.title.as_deref().unwrap_or(""))
         .bind(&req.content)
-        .execute(&mut **db)
-        .await
+        .execute(&mut **db).await
         .map_err(|_| (Status::InternalServerError, Json(ApiError { error: "Insert failed".into() })))?;
-
     Ok(Json(ApiSuccess { message: "Announcement posted".into() }))
 }
 
@@ -41,12 +38,9 @@ pub async fn delete_announcement(
     token: BearerToken,
 ) -> Result<Json<ApiSuccess>, (Status, Json<ApiError>)> {
     require_admin(&token.0)?;
-
     sqlx::query("DELETE FROM announcements WHERE id = ?")
         .bind(id)
-        .execute(&mut **db)
-        .await
+        .execute(&mut **db).await
         .map_err(|_| (Status::InternalServerError, Json(ApiError { error: "Delete failed".into() })))?;
-
     Ok(Json(ApiSuccess { message: "Announcement deleted".into() }))
 }
