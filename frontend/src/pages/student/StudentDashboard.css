@@ -151,3 +151,112 @@
   .student-topbar { padding: 0.65rem 1rem; }
   .student-nav-name { display: none; }
 }
+
+/* ─── EditProfile modal styles ─── */
+.ep-picture-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 1.25rem;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 1.1rem 1.25rem;
+  margin-bottom: 1.1rem;
+}
+
+.ep-avatar-wrap {
+  position: relative;
+  flex-shrink: 0;
+}
+.ep-camera-btn {
+  position: absolute;
+  bottom: -2px; right: -2px;
+  width: 26px; height: 26px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: var(--bg);
+  border: 2px solid var(--surface);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.7rem;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.ep-camera-btn:hover { background: var(--orange); }
+
+.ep-picture-info { flex: 1; min-width: 0; }
+
+.ep-id-strip {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  padding: 0.55rem 0.9rem;
+  margin-bottom: 1rem;
+  font-size: 0.82rem;
+  flex-wrap: wrap;
+}
+.ep-readonly-badge {
+  margin-left: auto;
+  font-size: 0.68rem;
+  color: var(--bg5);
+  background: var(--bg3);
+  padding: 0.12rem 0.45rem;
+  border-radius: 4px;
+}
+
+.ep-tabs {
+  display: flex;
+  gap: 0.3rem;
+  background: var(--bg2);
+  border-radius: 8px;
+  padding: 0.3rem;
+  margin-bottom: 1.1rem;
+}
+.ep-tab {
+  flex: 1;
+  display: flex; align-items: center; justify-content: center; gap: 0.4rem;
+  padding: 0.5rem;
+  border: none; border-radius: 6px;
+  cursor: pointer;
+  font-family: 'Outfit', sans-serif;
+  font-size: 0.85rem; font-weight: 500;
+  background: transparent;
+  color: var(--fg-dim);
+  transition: all 0.15s;
+}
+.ep-tab:hover { color: var(--fg); }
+.ep-tab.active { background: var(--surface); color: var(--accent); }
+
+/* ─── Profile avatar (clickable) ─── */
+.profile-avatar-clickable {
+  position: relative;
+  cursor: pointer;
+  flex-shrink: 0;
+  border-radius: 50%;
+}
+.profile-avatar-overlay {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: rgba(0,0,0,0.45);
+  display: flex; align-items: center; justify-content: center;
+  opacity: 0;
+  transition: opacity 0.18s;
+  color: #fff;
+  font-size: 1.1rem;
+}
+.profile-avatar-clickable:hover .profile-avatar-overlay { opacity: 1; }
+
+/* ─── Topbar user button ─── */
+.student-nav-user-btn {
+  display: flex; align-items: center; gap: 0.5rem;
+  background: transparent; border: none; cursor: pointer;
+  color: var(--fg-dim); font-size: 0.82rem;
+  font-family: 'Outfit', sans-serif;
+  padding: 0.25rem 0.4rem;
+  border-radius: 6px;
+  transition: background 0.15s;
+}
+.student-nav-user-btn:hover { background: var(--bg2); color: var(--fg); }

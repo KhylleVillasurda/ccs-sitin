@@ -46,15 +46,15 @@ export default function AdminReports() {
 
       <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:'1rem', marginBottom:'2rem' }}>
         <div className="stat-card">
-          <div className="stat-icon" style={{ background:'rgba(127,187,179,0.15)' }}><i className="bi bi-people-fill"></i></div>
+          <div className="stat-icon" style={{ background:'rgba(127,187,179,0.15)' }}><i className="bi bi-people-fill" /></div>
           <div><div className="stat-value" style={{ color:'var(--blue)' }}>{stats?.students_registered??0}</div><div className="stat-label">Students Registered</div></div>
         </div>
         <div className="stat-card">
-          <div className="stat-icon" style={{ background:'rgba(167,192,128,0.15)' }}><i className="bi bi-check-circle-fill"></i></div>
+          <div className="stat-icon" style={{ background:'rgba(167,192,128,0.15)' }}><i className="bi bi-check-circle-fill" /></div>
           <div><div className="stat-value" style={{ color:'var(--green)' }}>{stats?.currently_sitin??0}</div><div className="stat-label">Currently Sitting In</div></div>
         </div>
         <div className="stat-card">
-          <div className="stat-icon" style={{ background:'rgba(219,188,127,0.15)' }}><i className="bi bi-bar-chart-fill"></i></div>
+          <div className="stat-icon" style={{ background:'rgba(219,188,127,0.15)' }}><i className="bi bi-bar-chart-fill" /></div>
           <div><div className="stat-value" style={{ color:'var(--accent)' }}>{stats?.total_sitin??0}</div><div className="stat-label">Total Sit-in Sessions</div></div>
         </div>
       </div>
@@ -63,14 +63,14 @@ export default function AdminReports() {
         <div className="card">
           <div className="section-title">Sessions by Purpose</div>
           {byPurpose.length===0
-            ? <div className="empty-state"><div className="empty-state-icon"><i className="bi bi-bar-chart-fill"></i></div><div className="empty-state-text">No data yet</div></div>
+            ? <div className="empty-state"><div className="empty-state-icon"><i className="bi bi-bar-chart-fill" /></div><div className="empty-state-text">No data yet</div></div>
             : byPurpose.map((d,i)=><Bar key={d.purpose} label={d.purpose} count={d.count} max={maxP} color={COLORS[i%COLORS.length]}/>)
           }
         </div>
         <div className="card">
           <div className="section-title">Sessions by Lab</div>
           {byLab.length===0
-            ? <div className="empty-state"><div className="empty-state-icon">🏛️</div><div className="empty-state-text">No data yet</div></div>
+            ? <div className="empty-state"><div className="empty-state-icon"><i className="bi bi-building" /></div><div className="empty-state-text">No data yet</div></div>
             : byLab.map((d,i)=><Bar key={d.lab} label={`Lab ${d.lab}`} count={d.count} max={maxL} color={COLORS[(i+3)%COLORS.length]}/>)
           }
         </div>

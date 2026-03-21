@@ -1,10 +1,14 @@
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import api from '../../api'
+import UserAvatar from '../../components/UserAvatar'
 
 const COURSES = ['BSIT', 'BSCS', 'BSIS', 'ACT']
 
+const MAX_SIZE_MB = 2
+const MAX_SIZE_BYTES = MAX_SIZE_MB * 1024 * 1024
+
 export default function EditProfile({ user, onClose, onSaved }) {
-  const [tab, setTab] = useState('info') // 'info' | 'password'
+  const [tab, setTab] = useState('info')
   const [form, setForm] = useState({
     last_name:    user.last_name    || '',
     first_name:   user.first_name   || '',
@@ -15,38 +19,69 @@ export default function EditProfile({ user, onClose, onSaved }) {
     address:      user.address      || '',
   })
   const [pwForm, setPwForm] = useState({
-    current_password: '',
-    new_password: '',
-    confirm_password: '',
+    current_password: '', new_password: '', confirm_password: '',
   })
-  const [loading, setLoading] = useState(false)
-  const [error, setError]   = useState('')
-  const [success, setSuccess] = useState('')
+  const [preview, setPreview]   = useState(user.profile_picture || null)
+  const [picChanged, setPicChanged] = useState(false)
+  const [removeFlag, setRemoveFlag] = useState(false)
+  const [loading, setLoading]   = useState(false)
+  const [error, setError]       = useState('')
+  const [success, setSuccess]   = useState('')
+  const fileRef = useRef()
 
-  const set    = e => setForm(f => ({ ...f, [e.target.name]: e.target.value }))
-  const setPw  = e => setPwForm(f => ({ ...f, [e.target.name]: e.target.value }))
+  const set   = e => setForm(f => ({ ...f, [e.target.name]: e.target.value }))
+  const setPw = e => setPwForm(f => ({ ...f, [e.target.name]: e.target.value }))
 
+  // ── Picture handling ────────────────────────────────────────────────────
+  const handleFileChange = e => {
+    const file = e.target.files[0]
+    if (!file) return
+    setError('')
+    if (!file.type.startsWith('image/')) {
+      setError('Please select an image file (JPG, PNG, WEBP…)'); return
+    }
+    if (file.size > MAX_SIZE_BYTES) {
+      setError(`Image must be under ${MAX_SIZE_MB} MB`); return
+    }
+    const reader = new FileReader()
+    reader.onload = ev => {
+      setPreview(ev.target.result)  // base64 data URL
+      setPicChanged(true)
+      setRemoveFlag(false)
+    }
+    reader.readAsDataURL(file)
+  }
+
+  const handleRemovePicture = () => {
+    setPreview(null)
+    setPicChanged(true)
+    setRemoveFlag(true)
+    if (fileRef.current) fileRef.current.value = ''
+  }
+
+  // ── Save profile info ───────────────────────────────────────────────────
   const saveInfo = async () => {
     setLoading(true); setError(''); setSuccess('')
     try {
-      await api.put(`/students/profile/${user.id_number}`, {
-        last_name:    form.last_name,
-        first_name:   form.first_name,
-        middle_name:  form.middle_name || null,
+      const payload = {
+        last_name:    form.last_name    || null,
+        first_name:   form.first_name   || null,
+        middle_name:  form.middle_name  || null,
         course_level: parseInt(form.course_level),
-        email:        form.email || null,
+        email:        form.email        || null,
         course:       form.course,
-        address:      form.address || null,
-      })
-      // Re-fetch updated user info
-      const { data } = await api.get(`/students/${user.id_number}`)
-      setSuccess('Profile updated!')
-      setTimeout(() => onSaved(data), 800)
+        address:      form.address      || null,
+        profile_picture: removeFlag ? 'remove' : picChanged ? preview : null,
+      }
+      const { data: updatedUser } = await api.put(`/students/profile/${user.id_number}`, payload)
+      setSuccess('Profile saved!')
+      setTimeout(() => onSaved(updatedUser), 700)
     } catch (err) {
       setError(err.response?.data?.error || 'Update failed')
     } finally { setLoading(false) }
   }
 
+  // ── Save password ───────────────────────────────────────────────────────
   const savePassword = async () => {
     setError(''); setSuccess('')
     if (!pwForm.current_password) { setError('Enter your current password'); return }
@@ -65,41 +100,79 @@ export default function EditProfile({ user, onClose, onSaved }) {
     } finally { setLoading(false) }
   }
 
+  // ── Derived preview user for avatar display ─────────────────────────────
+  const previewUser = { ...user, profile_picture: preview }
+
   return (
     <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
-      <div className="modal" style={{ maxWidth: 560 }}>
+      <div className="modal" style={{ maxWidth: 580 }}>
         <div className="modal-header">
-          <span className="modal-title"><i class="bi bi-pen"></i> Edit Profile</span>
-          <button className="modal-close" onClick={onClose}>✕</button>
+          <span className="modal-title">Edit Profile</span>
+          <button className="modal-close" onClick={onClose}>
+            <i className="bi bi-x-lg" />
+          </button>
         </div>
 
-        {/* ID display (read-only) */}
-        <div style={{ background:'var(--bg2)', borderRadius:'7px', padding:'0.65rem 1rem', marginBottom:'1.25rem', border:'1px solid var(--border)', display:'flex', alignItems:'center', gap:'0.75rem' }}>
-          <span style={{ fontSize:'0.75rem', color:'var(--fg-dim)', textTransform:'uppercase', letterSpacing:'0.05em' }}>Student ID</span>
+        {/* ── Profile picture section ── */}
+        <div className="ep-picture-row">
+          <div className="ep-avatar-wrap">
+            <UserAvatar user={previewUser} size={80} fontSize="1.75rem" />
+            <button
+              className="ep-camera-btn"
+              title="Change photo"
+              onClick={() => fileRef.current?.click()}
+            >
+              <i className="bi bi-camera-fill" />
+            </button>
+          </div>
+          <div className="ep-picture-info">
+            <div style={{ fontWeight: 600, fontSize: '0.95rem' }}>
+              {user.first_name} {user.last_name}
+            </div>
+            <div style={{ color: 'var(--fg-dim)', fontSize: '0.8rem', marginTop: '0.1rem' }}>
+              {user.id_number} · {user.course}
+            </div>
+            <div style={{ display:'flex', gap:'0.5rem', marginTop:'0.65rem', flexWrap:'wrap' }}>
+              <button className="btn btn-ghost btn-sm" onClick={() => fileRef.current?.click()}>
+                <i className="bi bi-upload" /> Upload Photo
+              </button>
+              {preview && (
+                <button className="btn btn-sm" onClick={handleRemovePicture}
+                  style={{ background:'rgba(230,126,128,0.12)', color:'var(--red)', border:'1px solid rgba(230,126,128,0.25)' }}>
+                  <i className="bi bi-trash3" /> Remove
+                </button>
+              )}
+            </div>
+            <div style={{ fontSize:'0.72rem', color:'var(--bg5)', marginTop:'0.4rem' }}>
+              JPG, PNG, WEBP · Max {MAX_SIZE_MB} MB
+            </div>
+          </div>
+          <input ref={fileRef} type="file" accept="image/*"
+            style={{ display:'none' }} onChange={handleFileChange} />
+        </div>
+
+        {/* ── ID (read-only) ── */}
+        <div className="ep-id-strip">
+          <i className="bi bi-shield-lock" style={{ color:'var(--fg-dim)' }} />
+          <span style={{ fontSize:'0.75rem', color:'var(--fg-dim)' }}>Student ID</span>
           <span style={{ fontFamily:'monospace', color:'var(--blue)', fontWeight:600 }}>{user.id_number}</span>
-          <span style={{ marginLeft:'auto', fontSize:'0.7rem', color:'var(--bg5)', background:'var(--bg3)', padding:'0.15rem 0.5rem', borderRadius:'4px' }}>cannot be changed</span>
+          <span className="ep-readonly-badge">read-only</span>
         </div>
 
-        {/* Tabs */}
-        <div style={{ display:'flex', gap:'0.35rem', marginBottom:'1.25rem', background:'var(--bg2)', borderRadius:'8px', padding:'0.3rem' }}>
-          {[['info',<><i className="bi bi-person-fill"></i> Profile Info</>],['password',<><i className="bi bi-key-fill"></i> Change Password</>]].map(([key, label]) => (
+        {/* ── Tabs ── */}
+        <div className="ep-tabs">
+          {[['info','bi-person','Profile Info'],['password','bi-key','Change Password']].map(([key, icon, label]) => (
             <button key={key} onClick={() => { setTab(key); setError(''); setSuccess('') }}
-              style={{
-                flex:1, padding:'0.5rem', border:'none', borderRadius:'6px', cursor:'pointer',
-                fontFamily:"'Outfit', sans-serif", fontSize:'0.85rem', fontWeight:500,
-                background: tab===key ? 'var(--surface)' : 'transparent',
-                color: tab===key ? 'var(--accent)' : 'var(--fg-dim)',
-                transition:'all 0.15s',
-              }}>
-              {label}
+              className={`ep-tab${tab===key?' active':''}`}>
+              <i className={`bi ${icon}`} /> {label}
             </button>
           ))}
         </div>
 
-        {error   && <div className="alert alert-error">⚠ {error}</div>}
-        {success && <div className="alert alert-success">✓ {success}</div>}
+        {error   && <div className="alert alert-error"><i className="bi bi-exclamation-triangle" /> {error}</div>}
+        {success && <div className="alert alert-success"><i className="bi bi-check-circle" /> {success}</div>}
 
-        {/* Profile Info tab */}
+        {/* ── Info tab ── */}
         {tab === 'info' && (
           <>
             <div className="form-row">
@@ -126,28 +199,30 @@ export default function EditProfile({ user, onClose, onSaved }) {
               <div className="form-group">
                 <label className="label">Year Level</label>
                 <select className="select" name="course_level" value={form.course_level} onChange={set}>
-                  {[1,2,3,4].map(y => <option key={y} value={y}>{y === 1 ? '1st' : y === 2 ? '2nd' : y === 3 ? '3rd' : '4th'} Year</option>)}
+                  {[1,2,3,4].map(y => (
+                    <option key={y} value={y}>{['1st','2nd','3rd','4th'][y-1]} Year</option>
+                  ))}
                 </select>
               </div>
             </div>
             <div className="form-group">
-              <label className="label">Email Address</label>
+              <label className="label">Email</label>
               <input className="input" name="email" type="email" value={form.email} onChange={set} placeholder="your@email.com" />
             </div>
             <div className="form-group">
               <label className="label">Address</label>
               <input className="input" name="address" value={form.address} onChange={set} placeholder="City, Province" />
             </div>
-            <div style={{ display:'flex', gap:'0.75rem', justifyContent:'flex-end', marginTop:'0.5rem' }}>
+            <div style={{ display:'flex', gap:'0.75rem', justifyContent:'flex-end', marginTop:'0.75rem' }}>
               <button className="btn btn-ghost" onClick={onClose}>Cancel</button>
               <button className="btn btn-primary" onClick={saveInfo} disabled={loading}>
-                {loading ? 'Saving…' : <><i className="bi bi-download"></i> Save Changes</>}
+                <i className="bi bi-floppy" /> {loading ? 'Saving…' : 'Save Changes'}
               </button>
             </div>
           </>
         )}
 
-        {/* Change Password tab */}
+        {/* ── Password tab ── */}
         {tab === 'password' && (
           <>
             <div className="form-group">
@@ -165,10 +240,10 @@ export default function EditProfile({ user, onClose, onSaved }) {
               <input className="input" name="confirm_password" type="password"
                 value={pwForm.confirm_password} onChange={setPw} placeholder="••••••••" />
             </div>
-            <div style={{ display:'flex', gap:'0.75rem', justifyContent:'flex-end', marginTop:'0.5rem' }}>
+            <div style={{ display:'flex', gap:'0.75rem', justifyContent:'flex-end', marginTop:'0.75rem' }}>
               <button className="btn btn-ghost" onClick={onClose}>Cancel</button>
               <button className="btn btn-primary" onClick={savePassword} disabled={loading}>
-                {loading ? 'Updating…' : '🔑 Update Password'}
+                <i className="bi bi-key" /> {loading ? 'Updating…' : 'Update Password'}
               </button>
             </div>
           </>

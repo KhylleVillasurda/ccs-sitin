@@ -42,7 +42,7 @@ function SitInModal({ onClose, onStarted }) {
             <input className="input" value={search} onChange={e=>setSearch(e.target.value)}
               placeholder="Enter student ID…" onKeyDown={e=>e.key==='Enter'&&findStudent()}/>
             <button className="btn btn-ghost" onClick={findStudent} disabled={searching} style={{ flexShrink:0 }}>
-              {searching?'…':<><i className="bi bi-search"></i> Find</>}
+              {searching?'…':'<i className="bi bi-search" /> Find'}
             </button>
           </div>
         </div>
@@ -131,7 +131,7 @@ export default function AdminSitin() {
             {loading
               ? <tr><td colSpan={8} style={{ textAlign:'center', padding:'2rem', color:'var(--fg-dim)' }}>Loading…</td></tr>
               : current.length===0
-                ? <tr><td colSpan={8}><div className="empty-state"><div className="empty-state-icon"><i className="bi bi-laptop"></i></div><div className="empty-state-text">No students currently sitting in</div></div></td></tr>
+                ? <tr><td colSpan={8}><div className="empty-state"><div className="empty-state-icon"><i class="bi bi-laptop"></i></div><div className="empty-state-text">No students currently sitting in</div></div></td></tr>
                 : current.map(r=>(
                   <tr key={r.id}>
                     <td><span style={{ color:'var(--fg-dim)', fontFamily:'monospace', fontSize:'0.82rem' }}>#{r.id}</span></td>

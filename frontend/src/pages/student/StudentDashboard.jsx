@@ -3,15 +3,16 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../hooks/useAuth'
 import api from '../../api'
 import EditProfile from './EditProfile'
+import UserAvatar from '../../components/UserAvatar'
 import './StudentDashboard.css'
 
 export default function StudentDashboard() {
   const { user, login, logout } = useAuth()
   const navigate = useNavigate()
-  const [records, setRecords] = useState([])
+  const [records, setRecords]             = useState([])
   const [announcements, setAnnouncements] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [showEdit, setShowEdit] = useState(false)
+  const [loading, setLoading]             = useState(true)
+  const [showEdit, setShowEdit]           = useState(false)
 
   const load = () => {
     Promise.all([
@@ -37,10 +38,14 @@ export default function StudentDashboard() {
   return (
     <div className="student-page">
       {showEdit && (
-        <EditProfile user={user} onClose={() => setShowEdit(false)} onSaved={handleProfileSaved} />
+        <EditProfile
+          user={user}
+          onClose={() => setShowEdit(false)}
+          onSaved={handleProfileSaved}
+        />
       )}
 
-      {/* Topbar */}
+      {/* ── Topbar — initials only, no photo ── */}
       <header className="student-topbar">
         <div className="student-brand">
           <img src="/ccs-logo.jpg" alt="CICS"
@@ -53,7 +58,9 @@ export default function StudentDashboard() {
         </div>
         <div className="student-topbar-right">
           <div className="student-nav-user">
-            <div className="student-avatar">{user.first_name?.[0]}{user.last_name?.[0]}</div>
+            <div className="student-avatar">
+              {user.first_name?.[0]}{user.last_name?.[0]}
+            </div>
             <span className="student-nav-name">{user.first_name} {user.last_name}</span>
           </div>
           <button className="btn btn-ghost btn-sm" onClick={() => setShowEdit(true)}>
@@ -67,17 +74,15 @@ export default function StudentDashboard() {
 
       <div className="student-content">
 
-        {/* Welcome banner */}
+        {/* ── Welcome ── */}
         <div className="student-welcome">
-          <div>
-            <h1>Welcome, <span style={{ color:'var(--accent)' }}>{user.first_name} {user.last_name}</span></h1>
-            <p style={{ color:'var(--fg-dim)', marginTop:'0.2rem', fontSize:'0.875rem' }}>
-              {user.id_number} &nbsp;·&nbsp; {user.course} &nbsp;·&nbsp; Year {user.course_level}
-            </p>
-          </div>
+          <h1>Welcome, <span style={{ color:'var(--accent)' }}>{user.first_name} {user.last_name}</span></h1>
+          <p style={{ color:'var(--fg-dim)', marginTop:'0.2rem', fontSize:'0.875rem' }}>
+            {user.id_number} &nbsp;·&nbsp; {user.course} &nbsp;·&nbsp; Year {user.course_level}
+          </p>
         </div>
 
-        {/* Stats row */}
+        {/* ── Stats ── */}
         <div className="student-stats">
           <div className="stat-card">
             <div className="stat-icon" style={{ background:'rgba(219,188,127,0.15)' }}>
@@ -108,26 +113,27 @@ export default function StudentDashboard() {
           </div>
         </div>
 
-        {/* Active sit-in alert */}
+        {/* ── Active sit-in banner ── */}
         {active.length > 0 && (
           <div className="active-sitin-banner">
-            <i className="bi bi-circle-fill" style={{ color:'var(--green)', fontSize:'0.6rem' }} />
-            <span><strong>Currently sitting in:</strong> {active[0].purpose} — Lab {active[0].lab}</span>
+            <i className="bi bi-circle-fill" style={{ color:'var(--green)', fontSize:'0.55rem' }} />
+            <span>
+              <strong>Currently sitting in:</strong> {active[0].purpose} — Lab {active[0].lab}
+            </span>
             <span style={{ marginLeft:'auto', fontSize:'0.78rem', color:'var(--fg-dim)' }}>
               Since {active[0].time_in?.slice(0,16).replace('T',' ')}
             </span>
           </div>
         )}
 
-        {/* Main 2-column grid: Announcements (left, primary) + Profile summary (right) */}
+        {/* ── Main grid ── */}
         <div className="student-main-grid">
 
-          {/* LEFT — Announcements (primary focus) */}
+          {/* LEFT — Announcements */}
           <div className="student-announcements-col">
             <div className="card">
               <div className="section-title">
-                <i className="bi bi-megaphone" />
-                Announcements
+                <i className="bi bi-megaphone" /> Announcements
               </div>
               {announcements.length === 0 ? (
                 <div className="empty-state">
@@ -137,7 +143,7 @@ export default function StudentDashboard() {
               ) : (
                 <div className="ann-list">
                   {announcements.map((a, i) => (
-                    <div key={a.id} className={`ann-item ${i === 0 ? 'ann-item-latest' : ''}`}>
+                    <div key={a.id} className={`ann-item${i===0?' ann-item-latest':''}`}>
                       <div className="ann-meta">
                         <i className="bi bi-person-circle" />
                         <span>{a.author}</span>
@@ -156,23 +162,37 @@ export default function StudentDashboard() {
             </div>
           </div>
 
-          {/* RIGHT — Profile summary card */}
+          {/* RIGHT — Profile card with photo */}
           <div className="student-side-col">
             <div className="card student-profile-card">
               <div className="section-title">
-                <i className="bi bi-person-badge" />
-                My Profile
+                <i className="bi bi-person-badge" /> My Profile
               </div>
+
+              {/* Avatar — profile picture shown here only */}
               <div className="profile-avatar-row">
-                <div className="profile-avatar-lg">
-                  {user.first_name?.[0]}{user.last_name?.[0]}
+                <div
+                  className="profile-avatar-clickable"
+                  onClick={() => setShowEdit(true)}
+                  title="Click to change photo"
+                >
+                  <UserAvatar user={user} size={72} fontSize="1.5rem" />
+                  <div className="profile-avatar-overlay">
+                    <i className="bi bi-camera" />
+                  </div>
                 </div>
                 <div>
-                  <div style={{ fontWeight:600, fontSize:'0.95rem' }}>{user.first_name} {user.middle_name ? user.middle_name[0]+'.' : ''} {user.last_name}</div>
-                  <div style={{ color:'var(--fg-dim)', fontSize:'0.8rem', marginTop:'0.1rem' }}>{user.course} — Year {user.course_level}</div>
+                  <div style={{ fontWeight:600, fontSize:'0.95rem' }}>
+                    {user.first_name}{user.middle_name ? ' '+user.middle_name[0]+'.' : ''} {user.last_name}
+                  </div>
+                  <div style={{ color:'var(--fg-dim)', fontSize:'0.8rem', marginTop:'0.15rem' }}>
+                    {user.course} — Year {user.course_level}
+                  </div>
                 </div>
               </div>
+
               <div className="divider" style={{ margin:'1rem 0' }} />
+
               <div className="profile-details">
                 <div className="profile-detail-row">
                   <i className="bi bi-hash" />
@@ -194,37 +214,31 @@ export default function StudentDashboard() {
                   </div>
                 )}
               </div>
-              <button className="btn btn-ghost btn-sm" style={{ width:'100%', justifyContent:'center', marginTop:'1rem' }}
-                onClick={() => setShowEdit(true)}>
+
+              <button
+                className="btn btn-ghost btn-sm"
+                style={{ width:'100%', justifyContent:'center', marginTop:'1rem' }}
+                onClick={() => setShowEdit(true)}
+              >
                 <i className="bi bi-pencil-square" /> Edit Profile
               </button>
             </div>
           </div>
         </div>
 
-        {/* Sit-in History — full width below */}
+        {/* ── Sit-in History ── */}
         <div style={{ marginTop:'1.5rem' }}>
           <div className="section-title">
-            <i className="bi bi-clock-history" />
-            Sit-in History
+            <i className="bi bi-clock-history" /> Sit-in History
           </div>
           <div className="table-wrap">
             <table>
               <thead>
-                <tr>
-                  <th>#</th>
-                  <th>Purpose</th>
-                  <th>Lab</th>
-                  <th>Status</th>
-                  <th>Time In</th>
-                  <th>Time Out</th>
-                </tr>
+                <tr><th>#</th><th>Purpose</th><th>Lab</th><th>Status</th><th>Time In</th><th>Time Out</th></tr>
               </thead>
               <tbody>
                 {loading ? (
-                  <tr><td colSpan={6} style={{ textAlign:'center', padding:'2rem', color:'var(--fg-dim)' }}>
-                    Loading…
-                  </td></tr>
+                  <tr><td colSpan={6} style={{ textAlign:'center', padding:'2rem', color:'var(--fg-dim)' }}>Loading…</td></tr>
                 ) : records.length === 0 ? (
                   <tr><td colSpan={6}>
                     <div className="empty-state">
@@ -240,20 +254,19 @@ export default function StudentDashboard() {
                     <td>
                       <span className={`badge ${r.status==='active'?'badge-green':'badge-blue'}`}>
                         {r.status === 'active'
-                          ? <><i className="bi bi-circle-fill" style={{ fontSize:'0.5rem', verticalAlign:'middle' }} /> Active</>
-                          : <><i className="bi bi-check-circle" style={{ fontSize:'0.7rem', verticalAlign:'middle' }} /> Done</>
+                          ? <><i className="bi bi-circle-fill" style={{ fontSize:'0.45rem', verticalAlign:'middle', marginRight:'3px' }} />Active</>
+                          : <><i className="bi bi-check-circle" style={{ fontSize:'0.7rem', verticalAlign:'middle', marginRight:'3px' }} />Done</>
                         }
                       </span>
                     </td>
                     <td style={{ fontSize:'0.78rem', color:'var(--fg-dim)' }}>{r.time_in?.slice(0,16).replace('T',' ')}</td>
-                    <td style={{ fontSize:'0.78rem', color:'var(--fg-dim)' }}>{r.time_out?.slice(0,16).replace('T',' ') || '—'}</td>
+                    <td style={{ fontSize:'0.78rem', color:'var(--fg-dim)' }}>{r.time_out?.slice(0,16).replace('T',' ')||'—'}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
         </div>
-
       </div>
     </div>
   )
