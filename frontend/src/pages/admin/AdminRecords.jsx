@@ -59,7 +59,7 @@ export default function AdminRecords() {
             {loading
               ? <tr><td colSpan={9} style={{ textAlign:'center', padding:'2rem', color:'var(--fg-dim)' }}>Loading…</td></tr>
               : filtered.length===0
-                ? <tr><td colSpan={9}><div className="empty-state"><div className="empty-state-icon">📋</div><div className="empty-state-text">No records found</div></div></td></tr>
+                ? <tr><td colSpan={9}><div className="empty-state"><div className="empty-state-icon"><i class="bi bi-clipboard-minus"></i></div><div className="empty-state-text">No records found</div></div></td></tr>
                 : filtered.map(r=>(
                   <tr key={r.id}>
                     <td style={{ color:'var(--fg-dim)', fontFamily:'monospace', fontSize:'0.8rem' }}>{r.id}</td>
