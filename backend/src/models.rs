@@ -1,17 +1,13 @@
 use serde::{Deserialize, Serialize};
 use chrono::NaiveDateTime;
 
-// ── Helper: serialize NaiveDateTime as "YYYY-MM-DD HH:MM:SS" string ────────
 fn fmt_dt<S>(dt: &Option<NaiveDateTime>, s: S) -> Result<S::Ok, S::Error>
-where S: serde::Serializer
-{
+where S: serde::Serializer {
     match dt {
         Some(d) => s.serialize_some(&d.format("%Y-%m-%dT%H:%M:%S").to_string()),
         None    => s.serialize_none(),
     }
 }
-
-// ─────────────────────────────────────────────────────────────────────────────
 
 #[derive(Debug, Serialize, Deserialize, sqlx::FromRow, Clone)]
 pub struct User {
@@ -27,6 +23,7 @@ pub struct User {
     pub address:            Option<String>,
     pub role:               String,
     pub remaining_sessions: i32,
+    pub profile_picture:    Option<String>,   // base64 data URL
     #[serde(serialize_with = "fmt_dt")]
     pub created_at:         Option<NaiveDateTime>,
 }
@@ -44,7 +41,8 @@ pub struct PublicUser {
     pub address:            Option<String>,
     pub role:               String,
     pub remaining_sessions: i32,
-    pub created_at:         Option<String>,   // already formatted string
+    pub profile_picture:    Option<String>,
+    pub created_at:         Option<String>,
 }
 
 impl From<User> for PublicUser {
@@ -61,12 +59,11 @@ impl From<User> for PublicUser {
             address:            u.address,
             role:               u.role,
             remaining_sessions: u.remaining_sessions,
+            profile_picture:    u.profile_picture,
             created_at:         u.created_at.map(|d| d.format("%Y-%m-%dT%H:%M:%S").to_string()),
         }
     }
 }
-
-// ─────────────────────────────────────────────────────────────────────────────
 
 #[derive(Debug, Serialize, Deserialize, sqlx::FromRow)]
 pub struct SitInRecord {
@@ -92,8 +89,6 @@ pub struct Announcement {
     #[serde(serialize_with = "fmt_dt")]
     pub created_at: Option<NaiveDateTime>,
 }
-
-// ─────────────────────────────────────────────────────────────────────────────
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct LoginRequest {
@@ -158,6 +153,7 @@ pub struct UpdateProfileRequest {
     pub address:          Option<String>,
     pub current_password: Option<String>,
     pub new_password:     Option<String>,
+    pub profile_picture:  Option<String>,   // base64 data URL or "remove"
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -167,11 +163,6 @@ pub struct AnnouncementRequest {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct ApiError {
-    pub error: String,
-}
-
+pub struct ApiError   { pub error:   String }
 #[derive(Debug, Serialize, Deserialize)]
-pub struct ApiSuccess {
-    pub message: String,
-}
+pub struct ApiSuccess { pub message: String }
