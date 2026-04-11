@@ -9,6 +9,8 @@ mod sitin;
 mod announcements;
 mod reports;
 mod cors;
+mod feedback;
+mod notifications;
 
 use rocket_db_pools::Database;
 use db::Db;
@@ -52,5 +54,18 @@ async fn rocket() -> _ {
             reports::stats,
             reports::by_purpose,
             reports::by_lab,
+        ])
+        .mount("/api/feedback", routes![
+            feedback::submit,
+            feedback::list,
+            feedback::reply,
+            feedback::my_feedbacks,
+            feedback::my_feedbacks_full,
+        ])
+        .mount("/api/notifications", routes![
+            notifications::list,
+            notifications::count,
+            notifications::mark_read,
+            notifications::mark_all_read,
         ])
 }

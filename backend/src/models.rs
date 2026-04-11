@@ -166,3 +166,79 @@ pub struct AnnouncementRequest {
 pub struct ApiError   { pub error:   String }
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ApiSuccess { pub message: String }
+
+// ── Feedback ────────────────────────────────────────────────────────────────
+
+#[derive(Debug, Serialize, Deserialize, sqlx::FromRow)]
+pub struct Feedback {
+    pub id:          i64,
+    pub sitin_id:    i64,
+    pub content:     String,
+    pub rating:      Option<i32>,
+    pub admin_reply: Option<String>,
+    #[serde(serialize_with = "fmt_dt")]
+    pub created_at:  Option<NaiveDateTime>,
+    #[serde(serialize_with = "fmt_dt")]
+    pub replied_at:  Option<NaiveDateTime>,
+}
+
+/// What admin sees — no student identity
+#[derive(Debug, Serialize, Deserialize, sqlx::FromRow)]
+pub struct FeedbackView {
+    pub id:          i64,
+    pub sitin_id:    i64,
+    pub purpose:     String,
+    pub lab:         String,
+    pub content:     String,
+    pub rating:      Option<i32>,
+    pub admin_reply: Option<String>,
+    #[serde(serialize_with = "fmt_dt")]
+    pub created_at:  Option<NaiveDateTime>,
+    #[serde(serialize_with = "fmt_dt")]
+    pub replied_at:  Option<NaiveDateTime>,
+}
+
+/// What student sees — their own submissions + admin reply
+#[derive(Debug, Serialize, Deserialize, sqlx::FromRow)]
+pub struct MyFeedbackEntry {
+    pub id:          i64,
+    pub sitin_id:    i64,
+    pub purpose:     String,
+    pub lab:         String,
+    pub content:     String,
+    pub rating:      Option<i32>,
+    pub admin_reply: Option<String>,
+    #[serde(serialize_with = "fmt_dt")]
+    pub created_at:  Option<NaiveDateTime>,
+    #[serde(serialize_with = "fmt_dt")]
+    pub replied_at:  Option<NaiveDateTime>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct FeedbackRequest {
+    pub sitin_id: i64,
+    pub content:  String,
+    pub rating:   Option<i32>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct AdminReplyRequest {
+    pub reply: String,
+}
+
+// ── Notifications ────────────────────────────────────────────────────────────
+
+#[derive(Debug, Serialize, Deserialize, sqlx::FromRow)]
+pub struct Notification {
+    pub id:         i64,
+    pub user_id:    String,
+    pub message:    String,
+    pub is_read:    bool,
+    pub notif_type: String,
+    pub link:       Option<String>,
+    #[serde(serialize_with = "fmt_dt")]
+    pub created_at: Option<NaiveDateTime>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct NotifCount { pub unread: i64 }

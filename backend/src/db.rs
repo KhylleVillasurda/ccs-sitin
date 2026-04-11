@@ -68,6 +68,44 @@ impl Fairing for DbInitFairing {
             )
         "#).execute(pool).await.ok();
 
+        // Feedbacks table (anonymised — no student_id column exposed to admin)
+        sqlx::query(r#"
+            CREATE TABLE IF NOT EXISTS feedbacks (
+                id          BIGINT AUTO_INCREMENT PRIMARY KEY,
+                sitin_id    BIGINT NOT NULL,
+                student_id  VARCHAR(50) NOT NULL,
+                content     TEXT NOT NULL,
+                admin_reply TEXT DEFAULT NULL,
+                created_at  DATETIME DEFAULT CURRENT_TIMESTAMP,
+                replied_at  DATETIME DEFAULT NULL,
+                FOREIGN KEY (sitin_id) REFERENCES sit_in_records(id)
+            )
+        "#).execute(pool).await.ok();
+
+        // Add rating column to feedbacks if it doesn't exist (migration)
+        sqlx::query(r#"
+            ALTER TABLE feedbacks ADD COLUMN IF NOT EXISTS rating TINYINT DEFAULT NULL
+        "#).execute(pool).await.ok();
+
+        // Notifications table
+        sqlx::query(r#"
+            CREATE TABLE IF NOT EXISTS notifications (
+                id          BIGINT AUTO_INCREMENT PRIMARY KEY,
+                user_id     VARCHAR(50) NOT NULL,
+                message     TEXT NOT NULL,
+                is_read     TINYINT(1) DEFAULT 0,
+                notif_type  VARCHAR(50) DEFAULT 'info',
+                link        VARCHAR(255) DEFAULT NULL,
+                created_at  DATETIME DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (user_id) REFERENCES users(id_number)
+            )
+        "#).execute(pool).await.ok();
+
+        // Migration: Add link column if not exists
+        sqlx::query(r#"
+            ALTER TABLE notifications ADD COLUMN IF NOT EXISTS link VARCHAR(255) DEFAULT NULL
+        "#).execute(pool).await.ok();
+
         // Seed default admin if not exists
         let admin_exists: (i64,) = sqlx::query_as(
             "SELECT COUNT(*) FROM users WHERE role = 'admin'"

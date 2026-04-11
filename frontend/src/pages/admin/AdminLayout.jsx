@@ -1,13 +1,15 @@
 import { Outlet, NavLink, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../hooks/useAuth'
+import NotificationBell from '../../components/NotificationBell'
 import './AdminLayout.css'
 
 const NAV = [
-  { to:'/admin',          label:'Home',    icon:'bi-house',          end:true },
-  { to:'/admin/students', label:'Students',icon:'bi-people'               },
-  { to:'/admin/sitin',    label:'Sit-in',  icon:'bi-display'              },
-  { to:'/admin/records',  label:'Records', icon:'bi-journal-text'         },
-  { to:'/admin/reports',  label:'Reports', icon:'bi-bar-chart-line'       },
+  { to:'/admin',            label:'Home',      icon:'bi-house',        end:true },
+  { to:'/admin/students',   label:'Students',  icon:'bi-people'               },
+  { to:'/admin/sitin',      label:'Sit-in',    icon:'bi-display'              },
+  { to:'/admin/records',    label:'Records',   icon:'bi-journal-text'         },
+  { to:'/admin/reports',    label:'Reports',   icon:'bi-bar-chart-line'       },
+  { to:'/admin/feedbacks',  label:'Feedbacks', icon:'bi-chat-quote'           },
 ]
 
 export default function AdminLayout() {
@@ -49,9 +51,16 @@ export default function AdminLayout() {
               <div className="sidebar-user-role">Administrator</div>
             </div>
           </div>
-          <button className="btn btn-ghost btn-sm sidebar-logout" onClick={handleLogout}>
-            <i className="bi bi-box-arrow-left" /> Logout
-          </button>
+          <div style={{ display:'flex', gap:'0.5rem', alignItems:'center' }}>
+            <NotificationBell dir="up-right" />
+            <button
+              className="btn btn-ghost btn-sm sidebar-logout"
+              style={{ flex:1, justifyContent:'center' }}
+              onClick={handleLogout}
+            >
+              <i className="bi bi-box-arrow-left" /> Logout
+            </button>
+          </div>
         </div>
       </aside>
       <main className="admin-main"><Outlet /></main>

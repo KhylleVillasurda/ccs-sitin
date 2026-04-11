@@ -1,0 +1,17 @@
+---------- Student Dashboard ----------
+
+Edit Profile - Done
+View Remaining Session - Done
+View Sitin History - Done
+Feedback - Not Implemented
+View Announcement - Done
+Sitin Lab Rules/Regulation - Not Implemented
+Reservation - Not Implemented
+Notification/Alert - Not Implemented
+View Rewards/Points - Not Implemented
+
+More Details:
+
+Reservation(Student): It should pop up a card or which is better for this feature implementation. The pop up should display
+
+

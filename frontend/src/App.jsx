@@ -9,6 +9,7 @@ import AdminStudents from './pages/admin/AdminStudents'
 import AdminSitin from './pages/admin/AdminSitin'
 import AdminRecords from './pages/admin/AdminRecords'
 import AdminReports from './pages/admin/AdminReports'
+import AdminFeedbacks from './pages/admin/AdminFeedbacks'
 import StudentDashboard from './pages/student/StudentDashboard'
 
 function ProtectedRoute({ children, role }) {
@@ -28,10 +29,11 @@ function AppRoutes() {
         <ProtectedRoute role="admin"><AdminLayout /></ProtectedRoute>
       }>
         <Route index element={<AdminHome />} />
-        <Route path="students" element={<AdminStudents />} />
-        <Route path="sitin" element={<AdminSitin />} />
-        <Route path="records" element={<AdminRecords />} />
-        <Route path="reports" element={<AdminReports />} />
+        <Route path="students"  element={<AdminStudents />} />
+        <Route path="sitin"     element={<AdminSitin />} />
+        <Route path="records"   element={<AdminRecords />} />
+        <Route path="reports"   element={<AdminReports />} />
+        <Route path="feedbacks" element={<AdminFeedbacks />} />
       </Route>
       <Route path="/student" element={
         <ProtectedRoute role="student"><StudentDashboard /></ProtectedRoute>

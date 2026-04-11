@@ -168,6 +168,18 @@
 }
 .student-nav-user-btn:hover { background: var(--bg2); color: var(--fg); }
 
+/* ─── Highlights ─── */
+.highlight-row {
+  background: rgba(219,188,127,0.1) !important;
+  box-shadow: inset 3px 0 0 var(--accent);
+  animation: highlight-pulse-row 1.5s ease infinite alternate;
+}
+
+@keyframes highlight-pulse-row {
+  from { background: rgba(219,188,127,0.06); }
+  to   { background: rgba(219,188,127,0.18); }
+}
+
 /* ─── Responsive ─── */
 @media (max-width: 900px) {
   .student-main-grid { grid-template-columns: 1fr; }
