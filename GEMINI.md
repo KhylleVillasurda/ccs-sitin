@@ -71,10 +71,19 @@ This document defines the foundational standards, architectural patterns, and de
 
 ## <i class="bi bi-arrow-repeat"></i> 4. Development Workflow
 
-1. **Research:** Map existing logic and validate assumptions (e.g., checking `models.rs` before adding fields).
+1. **Research:** 
+    - **Architecture First:** Always read `ARCHITECTURE.md`, `backend/ARCHITECTURE.md`, and `frontend/ARCHITECTURE.md` to understand the system flow before proposing changes.
+    - Map existing logic and validate assumptions (e.g., checking `models.rs` before adding fields).
 2. **Strategy:** Propose a implementation plan before execution.
 3. **Execution:** Surgical updates to files.
 4. **Validation:** Run `cargo check` for backend and verify frontend behavior.
+
+## <i class="bi bi-rocket-takeoff"></i> 6. Session Optimization
+
+To ensure efficient and high-quality assistance:
+1.  **Context Loading:** Always start a new session by reading `GEMINI.md`, `ARCHITECTURE.md`, `backend/ARCHITECTURE.md`, and `frontend/ARCHITECTURE.md`.
+2.  **Modular Approach:** Focus on one module at a time (e.g., `sitin.rs` or `StudentDashboard.jsx`).
+3.  **Verification:** Always run `cargo check` and verify frontend changes against the UI standards in Section 2.
 
 ---
 
