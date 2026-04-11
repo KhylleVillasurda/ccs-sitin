@@ -1,6 +1,6 @@
 # CCS Sit-in Monitoring System — First-Time Setup Guide
 
-> **University of Cebu — College of Information & Computer Science**
+> **University of Cebu — College of Computer Studies**
 > Full reference for getting the project running from scratch on a new machine.
 
 ---
@@ -140,7 +140,7 @@ The frontend starts at:
 ## Step 6 — Verify Everything Works
 
 1. Open `http://localhost:5173` in your browser
-2. You should see the **Landing page** with the UC and CICS logos
+2. You should see the **Landing page** with the UC and CCS logos
 3. Click **Login** and sign in with:
    - **ID:** `admin`
    - **Password:** `admin123`

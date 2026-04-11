@@ -124,7 +124,7 @@ export default function StudentDashboard() {
       {/* ── Topbar ── */}
       <header className="student-topbar">
         <div className="student-brand">
-          <img src="/ccs-logo.jpg" alt="CICS"
+          <img src="/ccs-logo.jpg" alt="CCS"
             style={{ width:28, height:28, borderRadius:'50%', objectFit:'cover' }}
             onError={e => e.target.style.display='none'} />
           <img src="/uc-logo.png" alt="UC"

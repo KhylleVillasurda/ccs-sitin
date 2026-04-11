@@ -22,13 +22,13 @@ export default function AdminLayout() {
       <aside className="sidebar">
         <div className="sidebar-brand">
           <div className="sidebar-logos">
-            <img src="/ccs-logo.jpg" alt="CICS" className="sb-ccs-logo"
+            <img src="/ccs-logo.jpg" alt="CCS" className="sb-ccs-logo"
               onError={e => e.target.style.display='none'} />
             <img src="/uc-logo.png" alt="UC" className="sb-uc-logo"
               onError={e => e.target.style.display='none'} />
           </div>
           <div className="sidebar-text">
-            <div className="sidebar-name">CICS Admin</div>
+            <div className="sidebar-name">CCS Admin</div>
             <div className="sidebar-role">Sit-in Monitor</div>
           </div>
         </div>

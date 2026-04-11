@@ -51,7 +51,7 @@ export default function Register() {
       </div>
       <Link to="/" className="auth-back">← Back to Home</Link>
       <div className="auth-card auth-card-wide">
-        <div className="auth-logo"><div style={{display:"flex",gap:"0.5rem",alignItems:"center",justifyContent:"center"}}><img src="/ccs-logo.jpg" alt="CICS" style={{width:52,height:52,borderRadius:"50%",objectFit:"cover",border:"2px solid var(--border)"}}/><img src="/uc-logo.png" alt="UC" style={{height:40,width:"auto",objectFit:"contain"}}/></div></div>
+        <div className="auth-logo"><div style={{display:"flex",gap:"0.5rem",alignItems:"center",justifyContent:"center"}}><img src="/ccs-logo.jpg" alt="CCS" style={{width:52,height:52,borderRadius:"50%",objectFit:"cover",border:"2px solid var(--border)"}}/><img src="/uc-logo.png" alt="UC" style={{height:40,width:"auto",objectFit:"contain"}}/></div></div>
         <h1 className="auth-title">Create Account</h1>
         <p className="auth-sub">Register for CCS Sit-in Monitor</p>
 

@@ -32,7 +32,7 @@ export default function Login() {
       </div>
       <Link to="/" className="auth-back">← Back to Home</Link>
       <div className="auth-card">
-        <div className="auth-logo"><img src="/ccs-logo.jpg" alt="CICS" style={{width:64,height:64,borderRadius:"50%",objectFit:"cover",border:"2px solid var(--border)"}}/></div>
+        <div className="auth-logo"><img src="/ccs-logo.jpg" alt="CCS" style={{width:64,height:64,borderRadius:"50%",objectFit:"cover",border:"2px solid var(--border)"}}/></div>
         <h1 className="auth-title">Welcome back</h1>
         <p className="auth-sub">Sign in to CCS Sit-in Monitor</p>
 

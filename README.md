@@ -123,20 +123,20 @@ Opens at **http://localhost:5173**
 ## Features
 
 ### Admin Dashboard
-- 📊 Live stats (students, active sit-ins, totals)
-- 📈 Sessions by purpose + lab (bar charts)
-- 📣 Post / delete announcements
-- 👥 Student management — add, edit, delete, search, reset sessions
-- 💻 Start / end sit-in sessions by student ID
-- 📋 Full records with status filter
-- 📊 Reports breakdown
+- [bi-bar-chart-fill] Live stats (students, active sit-ins, totals)
+- [bi-graph-up] Sessions by purpose + lab (bar charts)
+- [bi-megaphone-fill] Post / delete announcements
+- [bi-people-fill] Student management — add, edit, delete, search, reset sessions
+- [bi-display-fill] Start / end sit-in sessions by student ID
+- [bi-journal-text] Full records with status filter
+- [bi-bar-chart-steps] Reports breakdown
 
-### Student Dashboard
-- 🎫 Remaining sessions counter
-- ✅ Active sit-in status
-- 📣 Announcements feed
-- 📋 Personal sit-in history
-- ✏️ Edit profile (name, course, email, address, password)
+**Student Features:**
+- [bi-ticket-perforated-fill] Remaining sessions counter
+- [bi-check2-circle] Active sit-in status
+- [bi-megaphone] Announcements feed
+- [bi-clock-history] Personal sit-in history
+- [bi-pencil-square] Edit profile (name, course, email, address, password)
   - Student ID is always read-only
 
 ---

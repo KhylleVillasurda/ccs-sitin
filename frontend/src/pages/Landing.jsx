@@ -108,22 +108,22 @@ export default function Landing() {
               <div className="mock-sidebar">
                 <div className="mock-sb-logo">
                   <img src="/ccs-logo.jpg" alt="CCS" style={{ width: 28, height: 28, borderRadius: '50%', objectFit: 'cover' }} />
-                  <span style={{ fontSize: '0.6rem', color: 'var(--fg-dim)', lineHeight: 1.2 }}>CICS<br/>Admin</span>
+                  <span style={{ fontSize: '0.6rem', color: 'var(--fg-dim)', lineHeight: 1.2 }}>CCS<br/>Admin</span>
                 </div>
-                <div className="mock-nav-item active">🏠 Home</div>
-                <div className="mock-nav-item">👥 Students</div>
-                <div className="mock-nav-item">💻 Sit-in</div>
-                <div className="mock-nav-item">📋 Records</div>
-                <div className="mock-nav-item">📊 Reports</div>
+                <div className="mock-nav-item active"><i className="bi bi-house-door-fill" style={{marginRight:'0.3rem'}}/> Home</div>
+                <div className="mock-nav-item"><i className="bi bi-people-fill" style={{marginRight:'0.3rem'}}/> Students</div>
+                <div className="mock-nav-item"><i className="bi bi-display-fill" style={{marginRight:'0.3rem'}}/> Sit-in</div>
+                <div className="mock-nav-item"><i className="bi bi-journal-text" style={{marginRight:'0.3rem'}}/> Records</div>
+                <div className="mock-nav-item"><i className="bi bi-bar-chart-fill" style={{marginRight:'0.3rem'}}/> Reports</div>
               </div>
               <div className="mock-main">
                 <div className="mock-stats">
                   <div className="mock-stat-card">
-                    <div className="mock-stat-icon" style={{background:'rgba(230,152,117,0.15)'}}>👥</div>
+                    <div className="mock-stat-icon" style={{background:'rgba(230,152,117,0.15)'}}><i className="bi bi-people-fill"/></div>
                     <div><div className="mock-stat-val">38</div><div className="mock-stat-lbl">Students</div></div>
                   </div>
                   <div className="mock-stat-card">
-                    <div className="mock-stat-icon" style={{background:'rgba(167,192,128,0.15)'}}>✅</div>
+                    <div className="mock-stat-icon" style={{background:'rgba(167,192,128,0.15)'}}><i className="bi bi-check-circle-fill"/></div>
                     <div><div className="mock-stat-val">12</div><div className="mock-stat-lbl">Sitting In</div></div>
                   </div>
                 </div>
@@ -152,9 +152,9 @@ export default function Landing() {
           </div>
           {/* Floating logo badge */}
           <div className="hero-logo-badge">
-            <img src="/ccs-logo.jpg" alt="CICS" className="badge-logo" />
+            <img src="/ccs-logo.jpg" alt="CCS" className="badge-logo" />
             <div>
-              <div className="badge-title">CICS</div>
+              <div className="badge-title">CCS</div>
               <div className="badge-sub">Since 1983</div>
             </div>
           </div>
@@ -174,7 +174,7 @@ export default function Landing() {
             </div>
             <div className="about-logo-sep">×</div>
             <div className="about-logo-card">
-              <img src="/ccs-logo.jpg" alt="CICS" className="about-logo-img ccs" />
+              <img src="/ccs-logo.jpg" alt="CCS" className="about-logo-img ccs" />
               <div>
                 <div className="about-logo-title">College of Information<br />&amp; Computer Science</div>
                 <div className="about-logo-sub">Qualitas Erudio Pro Discipulis · 1983</div>
@@ -182,7 +182,7 @@ export default function Landing() {
             </div>
           </div>
           <div className="about-text">
-            <h2>Built for CICS Students &amp; Faculty</h2>
+            <h2>Built for CCS Students &amp; Faculty</h2>
             <p>
               The CCS Sit-in Monitoring System was developed to streamline how the College of
               Information &amp; Computer Science manages student access to its computer laboratories.
@@ -207,12 +207,12 @@ export default function Landing() {
           </div>
           <div className="features-grid">
             {[
-              { icon:'🔐', title:'Secure Auth', desc:'Role-based access for admins and students with JWT token authentication.' },
-              { icon:'📊', title:'Live Statistics', desc:'Real-time dashboard showing current sit-ins, totals, and session counts.' },
-              { icon:'🗂️', title:'Student Registry', desc:'Add, edit, and manage all registered students with full CRUD operations.' },
-              { icon:'📋', title:'Sit-in Records', desc:'Track every session with timestamps, purpose (C++, Java, PHP…), and lab room.' },
-              { icon:'📣', title:'Announcements', desc:'Admin can post announcements visible to all students on their dashboard.' },
-              { icon:'📈', title:'Reports', desc:'Visual breakdowns of lab activity by programming purpose and room number.' },
+              { icon:<i className="bi bi-shield-lock-fill"/>, title:'Secure Auth', desc:'Role-based access for admins and students with JWT token authentication.' },
+              { icon:<i className="bi bi-graph-up"/>, title:'Live Statistics', desc:'Real-time dashboard showing current sit-ins, totals, and session counts.' },
+              { icon:<i className="bi bi-person-lines-fill"/>, title:'Student Registry', desc:'Add, edit, and manage all registered students with full CRUD operations.' },
+              { icon:<i className="bi bi-clipboard-data"/>, title:'Sit-in Records', desc:'Track every session with timestamps, purpose (C++, Java, PHP…), and lab room.' },
+              { icon:<i className="bi bi-megaphone-fill"/>, title:'Announcements', desc:'Admin can post announcements visible to all students on their dashboard.' },
+              { icon:<i className="bi bi-bar-chart-steps"/>, title:'Reports', desc:'Visual breakdowns of lab activity by programming purpose and room number.' },
             ].map(f => (
               <div key={f.title} className="feature-card">
                 <div className="feature-icon">{f.icon}</div>
@@ -228,7 +228,7 @@ export default function Landing() {
       <section className="cta-section">
         <div className="cta-inner">
           <div className="cta-logos">
-            <img src="/ccs-logo.jpg" alt="CICS" style={{ width: 60, height: 60, borderRadius: '50%', objectFit: 'cover', border: '2px solid var(--border)' }} />
+            <img src="/ccs-logo.jpg" alt="CCS" style={{ width: 60, height: 60, borderRadius: '50%', objectFit: 'cover', border: '2px solid var(--border)' }} />
           </div>
           <h2>Ready to get started?</h2>
           <p>Register your student account or contact the admin to begin tracking your lab sessions.</p>
@@ -243,7 +243,7 @@ export default function Landing() {
       <footer className="footer">
         <div className="footer-inner">
           <div className="footer-brand">
-            <img src="/ccs-logo.jpg" alt="CICS" style={{ width: 28, height: 28, borderRadius: '50%', objectFit: 'cover' }} />
+            <img src="/ccs-logo.jpg" alt="CCS" style={{ width: 28, height: 28, borderRadius: '50%', objectFit: 'cover' }} />
             <img src="/uc-logo.png" alt="UC" style={{ width: 40, height: 28, objectFit: 'contain' }} />
             <span>CCS Sit-in Monitoring System</span>
           </div>
