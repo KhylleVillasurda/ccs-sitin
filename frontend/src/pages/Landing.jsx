@@ -1,9 +1,25 @@
 import { Link } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth.jsx'
+import { useTheme } from '../context/ThemeContext.jsx'
+import { useEffect, useState } from 'react'
+import api from '../api'
+import UserAvatar from '../components/UserAvatar'
 import './Landing.css'
+
+const MEDALS = ['🥇', '🥈', '🥉', '4th', '5th']
 
 export default function Landing() {
   const { user } = useAuth()
+  const { theme, toggle } = useTheme()
+  const [leaderboard, setLeaderboard] = useState([])
+  const [lbLoading, setLbLoading] = useState(true)
+
+  useEffect(() => {
+    api.get('/reports/leaderboard')
+      .then(r => setLeaderboard(r.data))
+      .catch(() => {})
+      .finally(() => setLbLoading(false))
+  }, [])
 
   return (
     <div className="landing">
@@ -21,6 +37,10 @@ export default function Landing() {
         <div className="nav-links">
           <a href="#about" className="nav-link">About</a>
           <a href="#features" className="nav-link">Features</a>
+          <a href="#leaderboard" className="nav-link">Leaderboard</a>
+          <button className="theme-toggle" onClick={toggle} title="Toggle theme">
+            <i className={`bi ${theme === 'dark' ? 'bi-sun-fill' : 'bi-moon-fill'}`} />
+          </button>
           {user ? (
             <Link to={user.role === 'admin' ? '/admin' : '/student'} className="btn btn-primary">
               Dashboard →
@@ -43,7 +63,6 @@ export default function Landing() {
         </div>
 
         <div className="hero-content">
-          {/* School identity strip */}
           <div className="hero-school-strip">
             <img src="/uc-logo.png" alt="UC" className="hero-uc-logo" />
             <div className="hero-school-info">
@@ -150,35 +169,70 @@ export default function Landing() {
               </div>
             </div>
           </div>
-          {/* Floating logo badge */}
-          <div className="hero-logo-badge">
-            <img src="/ccs-logo.jpg" alt="CCS" className="badge-logo" />
-            <div>
-              <div className="badge-title">CCS</div>
-              <div className="badge-sub">Since 1983</div>
-            </div>
-          </div>
         </div>
       </section>
 
-      {/* About / School Section */}
-      <section id="about" className="about-section">
+      {/* ── Leaderboard ── */}
+      <section id="leaderboard" className="leaderboard-section">
+        <div className="leaderboard-inner">
+          <div className="lb-header">
+            <div className="lb-title-row">
+              <i className="bi bi-trophy-fill lb-trophy" />
+              <h2>Top Students Leaderboard</h2>
+            </div>
+            <p className="lb-subtitle">Most completed sit-in sessions this semester</p>
+          </div>
+
+          {lbLoading ? (
+            <div className="lb-loading">
+              <i className="bi bi-hourglass-split" /> Loading…
+            </div>
+          ) : leaderboard.length === 0 ? (
+            <div className="lb-empty">
+              <i className="bi bi-journal-x" style={{ fontSize:'2rem', opacity:0.35 }} />
+              <p>No completed sessions yet. Be the first on the board!</p>
+            </div>
+          ) : (
+            <div className="lb-cards">
+              {leaderboard.map((entry, i) => (
+                <div key={entry.id_number} className={`lb-card lb-rank-${i+1}`}>
+                  <div className="lb-rank-badge">{MEDALS[i]}</div>
+                  <UserAvatar
+                    user={{
+                      first_name: entry.first_name,
+                      last_name:  entry.last_name,
+                      profile_picture: entry.profile_picture,
+                    }}
+                    size={44}
+                    fontSize="0.9rem"
+                    className="lb-avatar"
+                    style={{ border: '2px solid var(--border)', flexShrink: 0 }}
+                  />
+                  <div className="lb-info">
+                    <div className="lb-name">
+                      {entry.first_name} {entry.last_name}
+                    </div>
+                    <div className="lb-course">{entry.course || 'CCS'}</div>
+                  </div>
+                  <div className="lb-count">
+                    <span className="lb-count-num">{entry.sitin_count}</span>
+                    <span className="lb-count-lbl">sessions</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </section>
+
+      {/* About */}
+      <section id="about" className="about">
         <div className="about-inner">
           <div className="about-logos">
-            <div className="about-logo-card">
-              <img src="/uc-logo.png" alt="University of Cebu" className="about-logo-img uc" />
-              <div>
-                <div className="about-logo-title">University of Cebu</div>
-                <div className="about-logo-sub">Main Campus · Since 1964</div>
-              </div>
-            </div>
-            <div className="about-logo-sep">×</div>
-            <div className="about-logo-card">
-              <img src="/ccs-logo.jpg" alt="CCS" className="about-logo-img ccs" />
-              <div>
-                <div className="about-logo-title">College of Information<br />&amp; Computer Science</div>
-                <div className="about-logo-sub">Qualitas Erudio Pro Discipulis · 1983</div>
-              </div>
+            <img src="/uc-logo.png" alt="UC" style={{ height: 80, width: 'auto', objectFit: 'contain' }} />
+            <div>
+              <div className="about-logo-title">College of Information<br />&amp; Computer Science</div>
+              <div className="about-logo-sub">Qualitas Erudio Pro Discipulis · 1983</div>
             </div>
           </div>
           <div className="about-text">
@@ -212,7 +266,7 @@ export default function Landing() {
               { icon:<i className="bi bi-person-lines-fill"/>, title:'Student Registry', desc:'Add, edit, and manage all registered students with full CRUD operations.' },
               { icon:<i className="bi bi-clipboard-data"/>, title:'Sit-in Records', desc:'Track every session with timestamps, purpose (C++, Java, PHP…), and lab room.' },
               { icon:<i className="bi bi-megaphone-fill"/>, title:'Announcements', desc:'Admin can post announcements visible to all students on their dashboard.' },
-              { icon:<i className="bi bi-bar-chart-steps"/>, title:'Reports', desc:'Visual breakdowns of lab activity by programming purpose and room number.' },
+              { icon:<i className="bi bi-calendar-check"/>, title:'Reservations', desc:'Students can reserve lab PCs in advance; admins approve or deny requests.' },
             ].map(f => (
               <div key={f.title} className="feature-card">
                 <div className="feature-icon">{f.icon}</div>

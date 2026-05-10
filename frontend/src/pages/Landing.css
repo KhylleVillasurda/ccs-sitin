@@ -229,3 +229,40 @@
   .cta-actions { flex-direction: column; align-items: center; }
   .footer-inner { flex-direction: column; gap: 0.5rem; text-align: center; }
 }
+
+/* ─── LEADERBOARD SECTION ─── */
+.leaderboard-section {
+  padding: 5rem 2.5rem;
+  border-top: 1px solid var(--border);
+  background: var(--bg1);
+}
+.leaderboard-inner { max-width: 820px; margin: 0 auto; }
+.lb-header { text-align: center; margin-bottom: 2.5rem; }
+.lb-title-row { display: flex; align-items: center; justify-content: center; gap: 0.75rem; margin-bottom: 0.5rem; }
+.lb-title-row h2 { font-size: 2rem; }
+.lb-trophy { font-size: 2rem; color: var(--yellow); }
+.lb-subtitle { color: var(--fg-dim); font-size: 0.9rem; }
+.lb-loading, .lb-empty { text-align: center; color: var(--fg-dim); padding: 2.5rem; display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 0.75rem; font-size: 0.9rem; }
+.lb-cards { display: flex; flex-direction: column; gap: 0.75rem; }
+.lb-card { display: flex; align-items: center; gap: 1rem; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 1rem 1.25rem; transition: transform 0.2s, border-color 0.2s; position: relative; overflow: hidden; }
+.lb-card:hover { transform: translateX(4px); border-color: var(--accent); }
+.lb-card::before { content:''; position:absolute; left:0; top:0; bottom:0; width:4px; border-radius:12px 0 0 12px; }
+.lb-rank-1::before { background:#ffd700; }
+.lb-rank-2::before { background:#c0c0c0; }
+.lb-rank-3::before { background:#cd7f32; }
+.lb-rank-4::before, .lb-rank-5::before { background:var(--border); }
+.lb-rank-badge { font-size:1.4rem; width:2rem; text-align:center; flex-shrink:0; font-family:'Outfit',sans-serif; font-weight:700; color:var(--fg-dim); }
+.lb-rank-1 .lb-rank-badge { color:#ffd700; }
+.lb-rank-2 .lb-rank-badge { color:#c0c0c0; }
+.lb-rank-3 .lb-rank-badge { color:#cd7f32; }
+.lb-avatar { width:44px; height:44px; border-radius:50%; background:var(--bg3); border:2px solid var(--border); display:flex; align-items:center; justify-content:center; font-size:0.9rem; font-weight:700; color:var(--fg); flex-shrink:0; }
+.lb-rank-1 .lb-avatar { background:rgba(255,215,0,0.15); border-color:#ffd700; }
+.lb-rank-2 .lb-avatar { background:rgba(192,192,192,0.15); border-color:#c0c0c0; }
+.lb-rank-3 .lb-avatar { background:rgba(205,127,50,0.15); border-color:#cd7f32; }
+.lb-info { flex:1; min-width:0; }
+.lb-name { font-weight:600; font-size:0.95rem; color:var(--fg); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.lb-course { font-size:0.78rem; color:var(--fg-dim); margin-top:0.1rem; }
+.lb-count { display:flex; flex-direction:column; align-items:flex-end; flex-shrink:0; }
+.lb-count-num { font-size:1.75rem; font-weight:700; font-family:'Outfit',sans-serif; line-height:1; color:var(--accent); }
+.lb-rank-1 .lb-count-num { color:#ffd700; }
+.lb-count-lbl { font-size:0.7rem; color:var(--fg-dim); text-transform:uppercase; letter-spacing:0.06em; }
