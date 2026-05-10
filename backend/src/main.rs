@@ -33,6 +33,7 @@ async fn rocket() -> _ {
         .mount("/api/students", routes![
             students::list,
             students::get_by_id,
+            students::get_avatar,
             students::update,
             students::update_profile,
             students::delete,
