@@ -49,6 +49,34 @@ CREATE TABLE IF NOT EXISTS announcements (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- If upgrading from existing install, add the column safely:
-ALTER TABLE users ADD COLUMN IF NOT EXISTS profile_picture LONGTEXT NULL;
+-- Note: MySQL 8.0 does not support ADD COLUMN IF NOT EXISTS. 
+-- If running this script on an existing DB, ignore errors about duplicate columns.
+ALTER TABLE users ADD COLUMN profile_picture LONGTEXT NULL;
+
+CREATE TABLE IF NOT EXISTS reservations (
+    id               BIGINT AUTO_INCREMENT PRIMARY KEY,
+    student_id       VARCHAR(50)  NOT NULL,
+    student_name     VARCHAR(255) NOT NULL,
+    lab              VARCHAR(50)  NOT NULL,
+    pc_number        INT          NOT NULL,
+    purpose          VARCHAR(100) NOT NULL,
+    reservation_date DATE         DEFAULT (CURRENT_DATE),
+    time_slot        VARCHAR(50)  DEFAULT NULL,
+    status           VARCHAR(20)  DEFAULT 'pending',
+    notes            TEXT         DEFAULT NULL,
+    requested_at     DATETIME     DEFAULT CURRENT_TIMESTAMP,
+    resolved_at      DATETIME     NULL,
+    resolved_by      VARCHAR(100) DEFAULT NULL,
+    FOREIGN KEY (student_id) REFERENCES users(id_number)
+        ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS pc_status (
+    id          BIGINT AUTO_INCREMENT PRIMARY KEY,
+    lab         VARCHAR(50) NOT NULL,
+    pc_number   INT         NOT NULL,
+    is_disabled TINYINT(1)  DEFAULT 0,
+    UNIQUE KEY uq_lab_pc (lab, pc_number)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 SELECT 'Setup complete!' AS status;

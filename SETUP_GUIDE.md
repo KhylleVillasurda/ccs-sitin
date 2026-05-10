@@ -60,7 +60,7 @@ mysql -u root < C:\path\to\ccs-sitin\xampp-setup.sql
 ```
 
 > **Already have an old install?**
-> The script uses `CREATE TABLE IF NOT EXISTS` and `ALTER TABLE ... ADD COLUMN IF NOT EXISTS` — it is safe to re-run. It will not wipe existing data.
+> The script uses `CREATE TABLE IF NOT EXISTS` and `ALTER TABLE ...` — it is safe to re-run. On standard MySQL (non-MariaDB), you may see "Duplicate column" warnings if you re-run it; these can be safely ignored.
 
 ---
 
