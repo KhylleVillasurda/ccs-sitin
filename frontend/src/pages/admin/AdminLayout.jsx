@@ -1,19 +1,22 @@
 import { Outlet, NavLink, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../hooks/useAuth'
+import { useTheme } from '../../context/ThemeContext'
 import NotificationBell from '../../components/NotificationBell'
 import './AdminLayout.css'
 
 const NAV = [
-  { to:'/admin',            label:'Home',      icon:'bi-house',        end:true },
-  { to:'/admin/students',   label:'Students',  icon:'bi-people'               },
-  { to:'/admin/sitin',      label:'Sit-in',    icon:'bi-display'              },
-  { to:'/admin/records',    label:'Records',   icon:'bi-journal-text'         },
-  { to:'/admin/reports',    label:'Reports',   icon:'bi-bar-chart-line'       },
-  { to:'/admin/feedbacks',  label:'Feedbacks', icon:'bi-chat-quote'           },
+  { to:'/admin',               label:'Home',         icon:'bi-house',        end:true },
+  { to:'/admin/students',      label:'Students',     icon:'bi-people'               },
+  { to:'/admin/sitin',         label:'Sit-in',       icon:'bi-display'              },
+  { to:'/admin/records',       label:'Records',      icon:'bi-journal-text'         },
+  { to:'/admin/reservations',  label:'Reservations', icon:'bi-calendar-check'       },
+  { to:'/admin/reports',       label:'Reports',      icon:'bi-bar-chart-line'       },
+  { to:'/admin/feedbacks',     label:'Feedbacks',    icon:'bi-chat-quote'           },
 ]
 
 export default function AdminLayout() {
   const { user, logout } = useAuth()
+  const { theme, toggle } = useTheme()
   const navigate = useNavigate()
   const handleLogout = () => { logout(); navigate('/') }
 
@@ -53,6 +56,9 @@ export default function AdminLayout() {
           </div>
           <div style={{ display:'flex', gap:'0.5rem', alignItems:'center' }}>
             <NotificationBell dir="up-right" />
+            <button className="theme-toggle" onClick={toggle} title="Toggle theme">
+              <i className={`bi ${theme === 'dark' ? 'bi-sun-fill' : 'bi-moon-fill'}`} />
+            </button>
             <button
               className="btn btn-ghost btn-sm sidebar-logout"
               style={{ flex:1, justifyContent:'center' }}

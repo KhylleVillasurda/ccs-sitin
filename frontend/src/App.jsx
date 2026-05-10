@@ -1,5 +1,6 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider, useAuth } from './hooks/useAuth.jsx'
+import { ThemeProvider } from './context/ThemeContext.jsx'
 import Landing from './pages/Landing'
 import Login from './pages/Login'
 import Register from './pages/Register'
@@ -10,6 +11,7 @@ import AdminSitin from './pages/admin/AdminSitin'
 import AdminRecords from './pages/admin/AdminRecords'
 import AdminReports from './pages/admin/AdminReports'
 import AdminFeedbacks from './pages/admin/AdminFeedbacks'
+import AdminReservations from './pages/admin/AdminReservations'
 import StudentDashboard from './pages/student/StudentDashboard'
 
 function ProtectedRoute({ children, role }) {
@@ -22,18 +24,19 @@ function ProtectedRoute({ children, role }) {
 function AppRoutes() {
   return (
     <Routes>
-      <Route path="/" element={<Landing />} />
-      <Route path="/login" element={<Login />} />
+      <Route path="/"        element={<Landing />} />
+      <Route path="/login"   element={<Login />} />
       <Route path="/register" element={<Register />} />
       <Route path="/admin" element={
         <ProtectedRoute role="admin"><AdminLayout /></ProtectedRoute>
       }>
-        <Route index element={<AdminHome />} />
-        <Route path="students"  element={<AdminStudents />} />
-        <Route path="sitin"     element={<AdminSitin />} />
-        <Route path="records"   element={<AdminRecords />} />
-        <Route path="reports"   element={<AdminReports />} />
-        <Route path="feedbacks" element={<AdminFeedbacks />} />
+        <Route index                  element={<AdminHome />} />
+        <Route path="students"        element={<AdminStudents />} />
+        <Route path="sitin"           element={<AdminSitin />} />
+        <Route path="records"         element={<AdminRecords />} />
+        <Route path="reservations"    element={<AdminReservations />} />
+        <Route path="reports"         element={<AdminReports />} />
+        <Route path="feedbacks"       element={<AdminFeedbacks />} />
       </Route>
       <Route path="/student" element={
         <ProtectedRoute role="student"><StudentDashboard /></ProtectedRoute>
@@ -45,8 +48,10 @@ function AppRoutes() {
 
 export default function App() {
   return (
-    <AuthProvider>
-      <AppRoutes />
-    </AuthProvider>
+    <ThemeProvider>
+      <AuthProvider>
+        <AppRoutes />
+      </AuthProvider>
+    </ThemeProvider>
   )
 }
