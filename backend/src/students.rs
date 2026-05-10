@@ -203,3 +203,21 @@ pub async fn reset_all_sessions(
         .map_err(|_| (Status::InternalServerError, Json(ApiError { error: "Reset failed".into() })))?;
     Ok(Json(ApiSuccess { message: "All sessions reset to 30".into() }))
 }
+
+/// Lightweight avatar endpoint — returns ONLY profile_picture for a given student.
+/// Called individually by the frontend so leaderboard/list payloads stay small.
+#[get("/avatar/<id_number>")]
+pub async fn get_avatar(
+    mut db: Connection<Db>,
+    id_number: &str,
+) -> Result<Json<serde_json::Value>, (Status, Json<ApiError>)> {
+    let row: Option<(Option<String>,)> = sqlx::query_as(
+        "SELECT profile_picture FROM users WHERE id_number = ?"
+    ).bind(id_number).fetch_optional(&mut **db).await
+    .map_err(|_| (Status::InternalServerError, Json(ApiError { error: "DB error".into() })))?;
+
+    match row {
+        Some((pic,)) => Ok(Json(serde_json::json!({ "profile_picture": pic }))),
+        None         => Err((Status::NotFound, Json(ApiError { error: "User not found".into() }))),
+    }
+}
