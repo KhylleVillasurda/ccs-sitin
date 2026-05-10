@@ -106,6 +106,45 @@ impl Fairing for DbInitFairing {
             ALTER TABLE notifications ADD COLUMN IF NOT EXISTS link VARCHAR(255) DEFAULT NULL
         "#).execute(pool).await.ok();
 
+        // Reservations table
+        sqlx::query(r#"
+            CREATE TABLE IF NOT EXISTS reservations (
+                id               BIGINT AUTO_INCREMENT PRIMARY KEY,
+                student_id       VARCHAR(50)  NOT NULL,
+                student_name     VARCHAR(255) NOT NULL,
+                lab              VARCHAR(50)  NOT NULL,
+                pc_number        INT          NOT NULL,
+                purpose          VARCHAR(100) NOT NULL,
+                reservation_date DATE         NOT NULL DEFAULT (CURDATE()),
+                time_slot        VARCHAR(50)  NOT NULL DEFAULT 'Flexible',
+                status           VARCHAR(20)  DEFAULT 'pending',
+                notes            TEXT         DEFAULT NULL,
+                requested_at     DATETIME     DEFAULT CURRENT_TIMESTAMP,
+                resolved_at      DATETIME     NULL,
+                resolved_by      VARCHAR(100) DEFAULT NULL,
+                FOREIGN KEY (student_id) REFERENCES users(id_number)
+            )
+        "#).execute(pool).await.ok();
+
+        // Migrate existing reservations table: add time columns if missing
+        sqlx::query(
+            "ALTER TABLE reservations ADD COLUMN IF NOT EXISTS              reservation_date DATE NOT NULL DEFAULT (CURDATE())"
+        ).execute(pool).await.ok();
+        sqlx::query(
+            "ALTER TABLE reservations ADD COLUMN IF NOT EXISTS              time_slot VARCHAR(50) NOT NULL DEFAULT 'Flexible'"
+        ).execute(pool).await.ok();
+
+        // PC status table (admin can mark PCs as disabled/broken)
+        sqlx::query(r#"
+            CREATE TABLE IF NOT EXISTS pc_status (
+                id          BIGINT AUTO_INCREMENT PRIMARY KEY,
+                lab         VARCHAR(50) NOT NULL,
+                pc_number   INT         NOT NULL,
+                is_disabled TINYINT(1)  DEFAULT 0,
+                UNIQUE KEY uq_lab_pc (lab, pc_number)
+            )
+        "#).execute(pool).await.ok();
+
         // Seed default admin if not exists
         let admin_exists: (i64,) = sqlx::query_as(
             "SELECT COUNT(*) FROM users WHERE role = 'admin'"

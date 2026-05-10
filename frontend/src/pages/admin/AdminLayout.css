@@ -143,3 +143,55 @@
   .sidebar { display: none; }
   .admin-main { margin-left: 0; padding: 1rem; }
 }
+
+/* ─── PC CONTROL PANEL ─── */
+.pc-legend {
+  display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;
+  font-size: 0.78rem; color: var(--fg-dim);
+  margin-bottom: 1rem; padding: 0.5rem 0.75rem;
+  background: var(--bg2); border-radius: 7px;
+}
+.pc-dot {
+  display: inline-block; width: 10px; height: 10px;
+  border-radius: 2px; margin-right: 4px;
+}
+.pc-dot.pc-ok       { background: var(--green); }
+.pc-dot.pc-reserved { background: var(--blue); }
+.pc-dot.pc-disabled { background: var(--bg5); }
+
+.pc-grid { display: flex; flex-direction: column; gap: 0.25rem; }
+.pc-row  { display: flex; gap: 0.35rem; flex-wrap: wrap; }
+
+.pc-btn {
+  width: 50px; height: 50px;
+  border-radius: 8px;
+  border: 1.5px solid var(--border);
+  background: var(--bg2);
+  color: var(--fg-dim);
+  font-size: 0.6rem;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px;
+  cursor: pointer;
+  transition: all 0.15s;
+  position: relative;
+  padding: 0;
+}
+.pc-btn:hover:not(:disabled) { transform: scale(1.08); }
+.pc-num { font-size: 0.58rem; line-height: 1; font-family: 'Outfit', monospace; }
+
+.pc-btn-ok       { background: rgba(167,192,128,0.1); border-color: rgba(167,192,128,0.35); color: var(--green); }
+.pc-btn-ok:hover { background: rgba(167,192,128,0.22); border-color: var(--green); }
+
+.pc-btn-reserved { background: rgba(127,187,179,0.1); border-color: rgba(127,187,179,0.35); color: var(--blue); cursor: default; }
+
+.pc-btn-disabled       { background: var(--bg3); border-color: var(--bg5); color: var(--bg5); }
+.pc-btn-disabled:hover { background: rgba(230,126,128,0.15); border-color: var(--red); color: var(--red); }
+
+.pc-res-dot {
+  position: absolute; top: 4px; right: 4px;
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--blue);
+}
+
+/* ─── LIGHT THEME OVERRIDES ─── */
+[data-theme="light"] .pc-btn-ok     { background: rgba(141,161,1,0.08); border-color: rgba(141,161,1,0.3); color: #5e6b00; }
+[data-theme="light"] .pc-btn-reserved { background: rgba(58,148,197,0.08); border-color: rgba(58,148,197,0.3); color: #1e6e99; }

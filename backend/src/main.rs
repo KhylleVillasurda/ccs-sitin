@@ -11,6 +11,7 @@ mod reports;
 mod cors;
 mod feedback;
 mod notifications;
+mod reservation;
 
 use rocket_db_pools::Database;
 use db::Db;
@@ -33,7 +34,7 @@ async fn rocket() -> _ {
             students::list,
             students::get_by_id,
             students::update,
-            students::update_profile,   // new: student self-edit
+            students::update_profile,
             students::delete,
             students::add,
             students::reset_all_sessions,
@@ -54,6 +55,7 @@ async fn rocket() -> _ {
             reports::stats,
             reports::by_purpose,
             reports::by_lab,
+            reports::leaderboard,
         ])
         .mount("/api/feedback", routes![
             feedback::submit,
@@ -67,5 +69,16 @@ async fn rocket() -> _ {
             notifications::count,
             notifications::mark_read,
             notifications::mark_all_read,
+        ])
+        .mount("/api/reservations", routes![
+            reservation::submit_reservation,
+            reservation::my_reservations,
+            reservation::all_reservations,
+            reservation::approve_reservation,
+            reservation::deny_reservation,
+            reservation::pc_status,
+            reservation::pc_control,
+            reservation::lab_occupancy,
+            reservation::time_slots,
         ])
 }

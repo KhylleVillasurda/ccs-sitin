@@ -6,7 +6,7 @@ port = 8000
 log_level = "normal"
 
 [default.databases.main]
-url = "mysql://root:@localhost:3306/ccs_sitin"
+url = "mysql://root:Cinetic123!@localhost:3306/ccs_sitin"
 
 [default.limits]
 json = "10MiB"
