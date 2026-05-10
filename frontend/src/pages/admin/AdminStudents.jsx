@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react'
+import { useDebounce } from '../../hooks/useDebounce'
 import api from '../../api'
 
 const COURSES = ['BSIT','BSCS','BSIS','ACT']
@@ -115,7 +116,8 @@ function AddModal({ onClose, onSaved }) {
 export default function AdminStudents() {
   const [students, setStudents] = useState([])
   const [loading, setLoading] = useState(true)
-  const [search, setSearch] = useState('')
+  const [searchInput, setSearchInput] = useState('')
+  const search = useDebounce(searchInput)
   const [editing, setEditing] = useState(null)
   const [adding, setAdding] = useState(false)
   const [msg, setMsg] = useState('')
@@ -168,7 +170,7 @@ export default function AdminStudents() {
         <div style={{ marginBottom:'1rem' }}>
           <div className="search-bar" style={{ maxWidth:'320px' }}>
             <span style={{ color:'var(--fg-dim)', fontSize:'0.9rem' }}>🔍</span>
-            <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search by name, ID, course…"/>
+            <input value={searchInput} onChange={e=>setSearchInput(e.target.value)} placeholder="Search by name, ID, course…"/>
           </div>
         </div>
         <div className="table-wrap">

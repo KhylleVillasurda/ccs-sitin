@@ -14,9 +14,28 @@ export default function Landing() {
   const [leaderboard, setLeaderboard] = useState([])
   const [lbLoading, setLbLoading] = useState(true)
 
+  // avatars map: id_number -> { loading, url }
+  const [avatars, setAvatars] = useState({})
+
   useEffect(() => {
     api.get('/reports/leaderboard')
-      .then(r => setLeaderboard(r.data))
+      .then(r => {
+        setLeaderboard(r.data)
+        // Fetch each student's avatar independently so the leaderboard
+        // list renders immediately and photos load in progressively.
+        r.data.forEach(entry => {
+          setAvatars(prev => ({ ...prev, [entry.id_number]: { loading: true, url: null } }))
+          api.get(`/students/avatar/${entry.id_number}`)
+            .then(ar => setAvatars(prev => ({
+              ...prev,
+              [entry.id_number]: { loading: false, url: ar.data.profile_picture ?? null }
+            })))
+            .catch(() => setAvatars(prev => ({
+              ...prev,
+              [entry.id_number]: { loading: false, url: null }
+            })))
+        })
+      })
       .catch(() => {})
       .finally(() => setLbLoading(false))
   }, [])
@@ -199,14 +218,16 @@ export default function Landing() {
                   <div className="lb-rank-badge">{MEDALS[i]}</div>
                   <UserAvatar
                     user={{
-                      first_name: entry.first_name,
-                      last_name:  entry.last_name,
-                      profile_picture: entry.profile_picture,
+                      first_name:      entry.first_name,
+                      last_name:       entry.last_name,
+                      profile_picture: avatars[entry.id_number]?.url ?? null,
                     }}
                     size={44}
                     fontSize="0.9rem"
                     className="lb-avatar"
-                    style={{ border: '2px solid var(--border)', flexShrink: 0 }}
+                    style={{ border: '2px solid var(--border)', flexShrink: 0,
+                             transition: 'opacity 0.3s',
+                             opacity: avatars[entry.id_number]?.loading ? 0.6 : 1 }}
                   />
                   <div className="lb-info">
                     <div className="lb-name">

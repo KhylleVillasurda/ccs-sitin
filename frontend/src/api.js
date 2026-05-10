@@ -1,15 +1,20 @@
 import axios from 'axios'
 
-const api = axios.create({ baseURL: '/api' })
+const api = axios.create({
+  baseURL: '/api',   // routes through Vite's proxy → localhost:8000
+  timeout: 12000,
+})
 
+// Attach JWT on every request
 api.interceptors.request.use(cfg => {
   const token = localStorage.getItem('token')
   if (token) cfg.headers.Authorization = `Bearer ${token}`
   return cfg
 })
 
+// Global 401 handler — clear session and redirect to login
 api.interceptors.response.use(
-  r => r,
+  res => res,
   err => {
     if (err.response?.status === 401) {
       localStorage.removeItem('token')
@@ -19,5 +24,35 @@ api.interceptors.response.use(
     return Promise.reject(err)
   }
 )
+
+// ── Simple in-memory GET cache ──────────────────────────────────────────────
+// Safe approach: wrap api.get instead of touching axios internals.
+const _cache = new Map()
+
+const CACHE_MS = {
+  '/reports/leaderboard': 60_000,
+  '/announcements/':      30_000,
+  '/notifications/count': 15_000,
+}
+
+const _get = api.get.bind(api)
+api.get = (url, config) => {
+  const ttl = CACHE_MS[url] ?? 0   // only cache explicitly listed routes
+  if (ttl > 0) {
+    const hit = _cache.get(url)
+    if (hit && hit.expires > Date.now()) {
+      return Promise.resolve({ data: hit.data, status: 200, cached: true })
+    }
+  }
+  return _get(url, config).then(res => {
+    if (ttl > 0) _cache.set(url, { data: res.data, expires: Date.now() + ttl })
+    return res
+  })
+}
+
+/** Bust cache entries whose key contains urlFragment. Call after mutations. */
+export function bustCache(urlFragment) {
+  _cache.forEach((_, key) => { if (key.includes(urlFragment)) _cache.delete(key) })
+}
 
 export default api

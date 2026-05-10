@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react'
 import api from '../../api'
+import { useDebounce } from '../../hooks/useDebounce'
 
 const LABS = ['524','526','528','530','542']
 const LAB_ROWS = 7
@@ -273,7 +274,8 @@ export default function AdminReservations() {
   const [loading,  setLoading]  = useState(true)
   const [tab,      setTab]      = useState('requests')   // requests | pc-control | logs
   const [filter,   setFilter]   = useState('pending')
-  const [search,   setSearch]   = useState('')
+  const [searchInput, setSearchInput] = useState('')
+  const search = useDebounce(searchInput)
   const [resolve,  setResolve]  = useState(null)         // { reservation, action }
   const [toast,    setToast]    = useState('')
 
@@ -367,7 +369,7 @@ export default function AdminReservations() {
           <div style={{ display:'flex', gap:'0.75rem', marginBottom:'1.25rem', alignItems:'center', flexWrap:'wrap' }}>
             <div className="search-bar" style={{ maxWidth:260 }}>
               <span style={{ color:'var(--fg-dim)', fontSize:'0.9rem' }}>🔍</span>
-              <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search by name, ID, lab…" />
+              <input value={searchInput} onChange={e => setSearchInput(e.target.value)} placeholder="Search by name, ID, lab…" />
             </div>
             <div style={{ display:'flex', gap:'0.4rem' }}>
               {['all','pending','approved','denied'].map(f => (

@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react'
 import api from '../../api'
+import { useDebounce } from '../../hooks/useDebounce'
 
 function exportCSV(records) {
   const headers = ['ID','Student ID','Name','Purpose','Lab','Session','Status','Time In','Time Out']
@@ -86,7 +87,8 @@ function exportPDF(records) {
 export default function AdminRecords() {
   const [records, setRecords] = useState([])
   const [loading, setLoading] = useState(true)
-  const [search,  setSearch]  = useState('')
+  const [searchInput, setSearchInput] = useState('')
+  const search = useDebounce(searchInput)
   const [filter,  setFilter]  = useState('all')
 
   useEffect(() => {
@@ -127,7 +129,7 @@ export default function AdminRecords() {
       <div style={{ display:'flex', gap:'0.75rem', marginBottom:'1.25rem', alignItems:'center', flexWrap:'wrap' }}>
         <div className="search-bar" style={{ maxWidth:'280px' }}>
           <span style={{ color:'var(--fg-dim)', fontSize:'0.9rem' }}>🔍</span>
-          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search records…"/>
+          <input value={searchInput} onChange={e => setSearchInput(e.target.value)} placeholder="Search records…"/>
         </div>
         <div style={{ display:'flex', gap:'0.4rem' }}>
           {['all','active','done'].map(f => (
