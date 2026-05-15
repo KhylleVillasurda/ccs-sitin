@@ -13,7 +13,8 @@ Before you start, make sure you have all of these installed:
 |------|---------|----------|
 | **XAMPP** | Runs MySQL (and Apache) locally | https://www.apachefriends.org |
 | **Rust (stable)** | Compiles and runs the backend | https://rustup.rs |
-| **Node.js (LTS)** | Runs the frontend dev server | https://nodejs.org |
+| **Node.js (LTS)** | Required for pnpm | https://nodejs.org |
+| **pnpm** | Package manager for the frontend | `npm install -g pnpm` |
 | **Git** | Source control | https://git-scm.com |
 
 > **Windows extra:** The Rust backend uses `sqlx` with the MySQL native connector. If `cargo run` fails with a linker error related to MySQL, install the MySQL C Connector:
@@ -45,10 +46,7 @@ Both should show green status. MySQL must be running before you start the backen
 4. Scroll down and click **Go**
 5. You should see: `Setup complete!`
 
-This creates the `ccs_sitin` database and three tables:
-- `users` — students and the admin account
-- `sit_in_records` — all sit-in sessions
-- `announcements` — admin-posted announcements
+This creates the `ccs_sitin` database and the necessary tables (users, sit_in_records, etc.).
 
 ### Option B — MySQL Console
 
@@ -72,15 +70,9 @@ Open `backend/Rocket.toml` in a text editor:
 [default]
 address = "0.0.0.0"
 port = 8000
-log_level = "normal"
 
 [default.databases.main]
 url = "mysql://root:@localhost:3306/ccs_sitin"
-#           ^^^^  ^
-#           user  password (empty by default in XAMPP)
-
-[default.limits]
-json = "10MiB"
 ```
 
 **Default XAMPP MySQL credentials:** user = `root`, password = *(leave blank)*
@@ -103,18 +95,6 @@ cargo run
 
 **First run takes several minutes** — Rust needs to compile all dependencies. Subsequent runs are much faster.
 
-When it's ready you'll see something like:
-
-```
-🚀 Rocket has launched from http://0.0.0.0:8000
-```
-
-> **What happens automatically on first `cargo run`:**
-> - All three database tables are created (if they don't exist yet)
-> - An admin account is seeded if no admin exists yet:
->   - **ID:** `admin`
->   - **Password:** `admin123`
-
 The API is now live at `http://localhost:8000`.
 
 ---
@@ -125,28 +105,26 @@ Open a **second terminal** (keep the backend running in the first one):
 
 ```bash
 cd frontend
-npm install       # Only needed the first time, or after pulling new changes
-npm run dev
+pnpm install       # Only needed the first time, or after pulling new changes
+pnpm run dev
 ```
 
 The frontend starts at:
 - **Local:** `http://localhost:5173`
-- **Network (other devices):** `http://YOUR_MACHINE_IP:5173`
 
-> The Vite dev server proxies all `/api` requests to `http://localhost:8000` automatically — you don't need to configure anything for the frontend and backend to talk to each other.
+> The Vite dev server proxies all `/api` requests to `http://localhost:8000` automatically.
 
 ---
 
 ## Step 6 — Verify Everything Works
 
 1. Open `http://localhost:5173` in your browser
-2. You should see the **Landing page** with the UC and CCS logos
-3. Click **Login** and sign in with:
+2. Click **Login** and sign in with:
    - **ID:** `admin`
    - **Password:** `admin123`
-4. You should be redirected to the **Admin Dashboard** with stats, announcements, and the sidebar
+3. You should be redirected to the **Admin Dashboard**.
 
-If the dashboard loads with data (even zeroes) — the full stack is working correctly.
+If the dashboard loads — the full stack is working correctly.
 
 ---
 
@@ -155,70 +133,20 @@ If the dashboard loads with data (even zeroes) — the full stack is working cor
 ```
 ccs-sitin/
 ├── xampp-setup.sql         ← Run this in phpMyAdmin FIRST
-├── database-dump.sql       ← For syncing data between machines
-├── export-db.bat           ← Windows: one-click DB export
-├── import-db.bat           ← Windows: one-click DB import
 │
 ├── backend/
 │   ├── Rocket.toml         ← Edit DB credentials here
-│   ├── Cargo.toml          ← Rust dependencies
+│   ├── Cargo.toml          ← Rust dependencies (Rocket 0.5.1, SQLx 0.8.6)
 │   └── src/
-│       ├── main.rs         ← Route mounting
-│       ├── db.rs           ← DB pool, table creation, admin seed
-│       ├── models.rs       ← Shared data structs
-│       ├── auth.rs         ← JWT, login, register
-│       ├── students.rs     ← Student CRUD + profile picture
-│       ├── sitin.rs        ← Start/end sit-in sessions
-│       ├── announcements.rs
-│       ├── reports.rs      ← Stats, by-purpose, by-lab
-│       └── cors.rs         ← CORS fairing (allows all origins)
+│       ├── main.rs         ← Route mounting, manual pool management
+│       ├── db.rs           ← Migration logic, admin seeding
+│       └── ...
 │
 └── frontend/
-    ├── index.html          ← Bootstrap Icons CDN loaded here
-    ├── vite.config.js      ← Proxy /api → :8000
-    └── src/
-        ├── App.jsx         ← Routes + ProtectedRoute
-        ├── api.js          ← Axios, auto-attaches JWT, 401 redirect
-        ├── index.css       ← Global Everforest Dark theme + utility classes
-        ├── hooks/
-        │   └── useAuth.jsx ← AuthContext, AuthProvider, useAuth()
-        ├── components/
-        │   └── UserAvatar.jsx
-        └── pages/
-            ├── Landing.jsx / Login.jsx / Register.jsx
-            ├── admin/
-            │   ├── AdminLayout.jsx   ← Sidebar + Outlet
-            │   ├── AdminHome.jsx     ← Stats + donut chart + announcements
-            │   ├── AdminStudents.jsx ← Student management table
-            │   ├── AdminSitin.jsx    ← Start/end sit-in sessions
-            │   ├── AdminRecords.jsx  ← Full sit-in history
-            │   └── AdminReports.jsx  ← Reports by purpose + lab
-            └── student/
-                ├── StudentDashboard.jsx
-                └── EditProfile.jsx
+    ├── pnpm-lock.yaml      ← Lockfile
+    ├── package.json        ← Vite 8.x configuration
+    └── vite.config.js      ← Vite 8.x + Rolldown/Oxc configuration
 ```
-
----
-
-## Syncing Data Between Machines (Windows)
-
-If you're working on multiple computers and need to carry over database records:
-
-**Export (on the source machine):**
-```bash
-# Double-click export-db.bat, or run in CMD:
-export-db.bat
-# Creates: database-dump.sql
-```
-
-**Import (on the target machine):**
-```bash
-# Make sure XAMPP MySQL is running, then:
-import-db.bat
-# Restores from: database-dump.sql
-```
-
-> The dump file is listed in `.gitignore` by default — commit it manually if you want it in version control.
 
 ---
 
@@ -230,19 +158,7 @@ import-db.bat
 | `cargo run` fails with `connection refused` | XAMPP MySQL not started | Start MySQL in XAMPP Control Panel |
 | Backend starts but login returns 500 | Wrong DB URL in `Rocket.toml` | Check credentials in `Rocket.toml` |
 | Frontend shows blank page | Backend not running | Start backend first (`cargo run`) |
-| `npm run dev` fails | Missing node_modules | Run `npm install` first |
-| Admin account missing | DB seeded before Rust ran | Just run `cargo run` — it seeds automatically if no admin exists |
-| `profile_picture` column missing | Old DB schema | Re-run `xampp-setup.sql` — the `ALTER TABLE` line is safe to re-run |
-
----
-
-## Default Credentials
-
-| Account | ID | Password |
-|---------|----|----------|
-| Admin | `admin` | `admin123` |
-
-> Change the admin password after your first login via the profile settings.
+| `pnpm run dev` fails | Missing node_modules | Run `pnpm install` first |
 
 ---
 
@@ -253,8 +169,7 @@ import-db.bat
 | Backend API | `http://localhost:8000` |
 | Frontend Dev | `http://localhost:5173` |
 | phpMyAdmin | `http://localhost/phpmyadmin` |
-| MySQL | `localhost:3306` |
 
 ---
 
-*Last updated to match codebase as of March 2026.*
+*Last updated May 2026.*
