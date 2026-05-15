@@ -1,5 +1,4 @@
-use rocket::{http::Status, serde::json::Json};
-use rocket_db_pools::Connection;
+use rocket::{http::Status, serde::json::Json, State};
 use serde::{Deserialize, Serialize};
 use crate::{auth::{BearerToken, require_admin}, db::Db, models::ApiError};
 
@@ -29,41 +28,41 @@ pub struct LeaderboardEntry {
 
 #[get("/stats")]
 pub async fn stats(
-    mut db: Connection<Db>,
+    db: &State<Db>,
     token: BearerToken,
 ) -> Result<Json<Stats>, (Status, Json<ApiError>)> {
     require_admin(&token.0)?;
     let registered: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM users WHERE role='student'")
-        .fetch_one(&mut **db).await.unwrap_or((0,));
+        .fetch_one(db.inner()).await.unwrap_or((0,));
     let current: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM sit_in_records WHERE status='active'")
-        .fetch_one(&mut **db).await.unwrap_or((0,));
+        .fetch_one(db.inner()).await.unwrap_or((0,));
     let total: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM sit_in_records")
-        .fetch_one(&mut **db).await.unwrap_or((0,));
+        .fetch_one(db.inner()).await.unwrap_or((0,));
     Ok(Json(Stats { students_registered: registered.0, currently_sitin: current.0, total_sitin: total.0 }))
 }
 
 #[get("/by-purpose")]
 pub async fn by_purpose(
-    mut db: Connection<Db>,
+    db: &State<Db>,
     token: BearerToken,
 ) -> Result<Json<Vec<PurposeStat>>, (Status, Json<ApiError>)> {
     require_admin(&token.0)?;
     let rows: Vec<PurposeStat> = sqlx::query_as(
         "SELECT purpose, COUNT(*) as count FROM sit_in_records GROUP BY purpose ORDER BY count DESC"
-    ).fetch_all(&mut **db).await
+    ).fetch_all(db.inner()).await
     .map_err(|_| (Status::InternalServerError, Json(ApiError { error: "DB error".into() })))?;
     Ok(Json(rows))
 }
 
 #[get("/by-lab")]
 pub async fn by_lab(
-    mut db: Connection<Db>,
+    db: &State<Db>,
     token: BearerToken,
 ) -> Result<Json<Vec<LabStat>>, (Status, Json<ApiError>)> {
     require_admin(&token.0)?;
     let rows: Vec<LabStat> = sqlx::query_as(
         "SELECT lab, COUNT(*) as count FROM sit_in_records GROUP BY lab ORDER BY count DESC"
-    ).fetch_all(&mut **db).await
+    ).fetch_all(db.inner()).await
     .map_err(|_| (Status::InternalServerError, Json(ApiError { error: "DB error".into() })))?;
     Ok(Json(rows))
 }
@@ -72,7 +71,7 @@ pub async fn by_lab(
 /// Avatars are fetched separately by the frontend on demand.
 #[get("/leaderboard")]
 pub async fn leaderboard(
-    mut db: Connection<Db>,
+    db: &State<Db>,
 ) -> Result<Json<Vec<LeaderboardEntry>>, (Status, Json<ApiError>)> {
     let rows: Vec<LeaderboardEntry> = sqlx::query_as(
         "SELECT u.id_number, u.first_name, u.last_name, u.course,
@@ -83,7 +82,7 @@ pub async fn leaderboard(
          GROUP BY s.student_id, u.id_number, u.first_name, u.last_name, u.course
          ORDER BY sitin_count DESC
          LIMIT 5",
-    ).fetch_all(&mut **db).await
+    ).fetch_all(db.inner()).await
     .map_err(|e| {
         eprintln!("LEADERBOARD ERROR: {}", e);
         (Status::InternalServerError, Json(ApiError { error: "DB error".into() }))

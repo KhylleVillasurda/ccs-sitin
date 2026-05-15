@@ -1,5 +1,4 @@
-use rocket::{http::Status, serde::json::Json};
-use rocket_db_pools::Connection;
+use rocket::{http::Status, serde::json::Json, State};
 use crate::{
     auth::verify_token,
     db::Db,
@@ -9,7 +8,7 @@ use crate::{
 /// Get notifications for the currently logged-in user (student or admin)
 #[get("/")]
 pub async fn list(
-    mut db: Connection<Db>,
+    db: &State<Db>,
     token: crate::auth::BearerToken,
 ) -> Result<Json<Vec<Notification>>, (Status, Json<ApiError>)> {
     let claims = verify_token(&token.0)
@@ -21,7 +20,7 @@ pub async fn list(
          ORDER BY created_at DESC LIMIT 50"
     )
     .bind(&claims.sub)
-    .fetch_all(&mut **db)
+    .fetch_all(db.inner())
     .await
     .map_err(|e| {
         eprintln!("NOTIF LIST ERROR: {}", e);
@@ -34,7 +33,7 @@ pub async fn list(
 /// Get unread notification count for polling
 #[get("/count")]
 pub async fn count(
-    mut db: Connection<Db>,
+    db: &State<Db>,
     token: crate::auth::BearerToken,
 ) -> Result<Json<NotifCount>, (Status, Json<ApiError>)> {
     let claims = verify_token(&token.0)
@@ -44,7 +43,7 @@ pub async fn count(
         "SELECT COUNT(*) FROM notifications WHERE user_id = ? AND is_read = 0"
     )
     .bind(&claims.sub)
-    .fetch_one(&mut **db)
+    .fetch_one(db.inner())
     .await
     .map_err(|_| (Status::InternalServerError, Json(ApiError { error: "Database error".into() })))?;
 
@@ -54,7 +53,7 @@ pub async fn count(
 /// Mark a single notification as read
 #[post("/<id>/read")]
 pub async fn mark_read(
-    mut db: Connection<Db>,
+    db: &State<Db>,
     id: i64,
     token: crate::auth::BearerToken,
 ) -> Result<Json<ApiSuccess>, (Status, Json<ApiError>)> {
@@ -66,7 +65,7 @@ pub async fn mark_read(
     )
     .bind(id)
     .bind(&claims.sub)
-    .execute(&mut **db)
+    .execute(db.inner())
     .await
     .map_err(|_| (Status::InternalServerError, Json(ApiError { error: "Update failed".into() })))?;
 
@@ -76,7 +75,7 @@ pub async fn mark_read(
 /// Mark all notifications as read
 #[post("/read-all")]
 pub async fn mark_all_read(
-    mut db: Connection<Db>,
+    db: &State<Db>,
     token: crate::auth::BearerToken,
 ) -> Result<Json<ApiSuccess>, (Status, Json<ApiError>)> {
     let claims = verify_token(&token.0)
@@ -86,7 +85,7 @@ pub async fn mark_all_read(
         "UPDATE notifications SET is_read = 1 WHERE user_id = ?"
     )
     .bind(&claims.sub)
-    .execute(&mut **db)
+    .execute(db.inner())
     .await
     .map_err(|_| (Status::InternalServerError, Json(ApiError { error: "Update failed".into() })))?;
 

@@ -1,11 +1,9 @@
 use rocket::fairing::{self, Fairing, Info, Kind};
 use rocket::{Rocket, Build};
-use rocket_db_pools::Database;
 use sqlx::MySqlPool;
 
-#[derive(Database)]
-#[database("main")]
-pub struct Db(MySqlPool);
+// `Db` is now a type alias for `sqlx::MySqlPool`
+pub type Db = MySqlPool;
 
 pub struct DbInitFairing;
 
@@ -16,12 +14,16 @@ impl Fairing for DbInitFairing {
     }
 
     async fn on_ignite(&self, rocket: Rocket<Build>) -> fairing::Result {
-        let db = match Db::fetch(&rocket) {
-            Some(db) => db,
-            None => return Err(rocket),
+        // Attempt to retrieve the managed MySqlPool from Rocket's state
+        let pool = match rocket.state::<MySqlPool>() {
+            Some(p) => p,
+            None => {
+                eprintln!("Error: MySqlPool not managed by Rocket. Ensure it's managed before attaching DbInitFairing.");
+                return Err(rocket);
+            }
         };
-        let pool = &db.0;
 
+        // Use the obtained pool for migrations and seeding
         // ── users ─────────────────────────────────────────────────────────
         sqlx::query(r#"
             CREATE TABLE IF NOT EXISTS users (
@@ -42,7 +44,7 @@ impl Fairing for DbInitFairing {
             )
         "#).execute(pool).await.ok();
 
-        if let Err(e) = sqlx::query(
+        if let Err(_e) = sqlx::query(
             "ALTER TABLE users ADD COLUMN profile_picture LONGTEXT DEFAULT NULL"
         ).execute(pool).await {
             // Log but don't crash (expected if column already exists)
@@ -91,7 +93,7 @@ impl Fairing for DbInitFairing {
             )
         "#).execute(pool).await.ok();
 
-        if let Err(e) = sqlx::query(
+        if let Err(_e) = sqlx::query(
             "ALTER TABLE feedbacks ADD COLUMN rating TINYINT DEFAULT NULL"
         ).execute(pool).await {
             // eprintln!("Migration notice (feedbacks.rating): {}", e);
@@ -111,7 +113,7 @@ impl Fairing for DbInitFairing {
             )
         "#).execute(pool).await.ok();
 
-        if let Err(e) = sqlx::query(
+        if let Err(_e) = sqlx::query(
             "ALTER TABLE notifications ADD COLUMN link VARCHAR(255) DEFAULT NULL"
         ).execute(pool).await {
             // eprintln!("Migration notice (notifications.link): {}", e);
@@ -137,13 +139,13 @@ impl Fairing for DbInitFairing {
             )
         "#).execute(pool).await.ok();
 
-        if let Err(e) = sqlx::query(
+        if let Err(_e) = sqlx::query(
             "ALTER TABLE reservations ADD COLUMN reservation_date DATE DEFAULT (CURDATE())"
         ).execute(pool).await {
             // eprintln!("Migration notice (reservation_date): {}", e);
         }
 
-        if let Err(e) = sqlx::query(
+        if let Err(_e) = sqlx::query(
             "ALTER TABLE reservations ADD COLUMN time_slot VARCHAR(50) DEFAULT NULL"
         ).execute(pool).await {
             // eprintln!("Migration notice (time_slot): {}", e);

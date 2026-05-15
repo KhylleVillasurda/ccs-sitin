@@ -1,5 +1,4 @@
-use rocket::{http::Status, serde::json::Json};
-use rocket_db_pools::Connection;
+use rocket::{http::Status, serde::json::Json, State};
 use crate::{
     auth::{BearerToken, require_admin, verify_token},
     db::Db, models::*,
@@ -7,7 +6,7 @@ use crate::{
 
 #[post("/start", data = "<req>")]
 pub async fn start_sitin(
-    mut db: Connection<Db>,
+    db: &State<Db>,
     req: Json<SitInRequest>,
     token: BearerToken,
 ) -> Result<Json<ApiSuccess>, (Status, Json<ApiError>)> {
@@ -15,7 +14,7 @@ pub async fn start_sitin(
 
     let student: Option<User> = sqlx::query_as(
         "SELECT * FROM users WHERE id_number = ? AND role = 'student'"
-    ).bind(&req.student_id).fetch_optional(&mut **db).await
+    ).bind(&req.student_id).fetch_optional(db.inner()).await
     .map_err(|e| {
         eprintln!("SITIN START DB ERROR: {}", e);
         (Status::InternalServerError, Json(ApiError { error: "Database error".into() }))
@@ -32,7 +31,7 @@ pub async fn start_sitin(
 
     let active: (i64,) = sqlx::query_as(
         "SELECT COUNT(*) FROM sit_in_records WHERE student_id = ? AND status = 'active'"
-    ).bind(&req.student_id).fetch_one(&mut **db).await
+    ).bind(&req.student_id).fetch_one(db.inner()).await
     .map_err(|_| (Status::InternalServerError, Json(ApiError { error: "Database error".into() })))?;
 
     if active.0 > 0 {
@@ -46,7 +45,7 @@ pub async fn start_sitin(
          VALUES (?, ?, ?, ?, ?)"
     ).bind(&req.student_id).bind(&student_name).bind(&req.purpose)
      .bind(&req.lab).bind(student.remaining_sessions)
-     .execute(&mut **db).await
+     .execute(db.inner()).await
     .map_err(|e| {
         eprintln!("SITIN INSERT ERROR: {}", e);
         (Status::InternalServerError, Json(ApiError { error: "Failed to start sit-in".into() }))
@@ -54,14 +53,14 @@ pub async fn start_sitin(
 
     sqlx::query(
         "UPDATE users SET remaining_sessions = remaining_sessions - 1 WHERE id_number = ?"
-    ).bind(&req.student_id).execute(&mut **db).await.ok();
+    ).bind(&req.student_id).execute(db.inner()).await.ok();
 
     Ok(Json(ApiSuccess { message: "Sit-in started".into() }))
 }
 
 #[post("/end/<sit_id>")]
 pub async fn end_sitin(
-    mut db: Connection<Db>,
+    db: &State<Db>,
     sit_id: i64,
     token: BearerToken,
 ) -> Result<Json<ApiSuccess>, (Status, Json<ApiError>)> {
@@ -70,7 +69,7 @@ pub async fn end_sitin(
     sqlx::query(
         "UPDATE sit_in_records SET status = 'done', time_out = NOW()
          WHERE id = ? AND status = 'active'"
-    ).bind(sit_id).execute(&mut **db).await
+    ).bind(sit_id).execute(db.inner()).await
     .map_err(|_| (Status::InternalServerError, Json(ApiError { error: "Update failed".into() })))?;
 
     Ok(Json(ApiSuccess { message: "Sit-in ended".into() }))
@@ -78,14 +77,14 @@ pub async fn end_sitin(
 
 #[get("/current")]
 pub async fn current(
-    mut db: Connection<Db>,
+    db: &State<Db>,
     token: BearerToken,
 ) -> Result<Json<Vec<SitInRecord>>, (Status, Json<ApiError>)> {
     require_admin(&token.0)?;
 
     let records: Vec<SitInRecord> = sqlx::query_as(
         "SELECT * FROM sit_in_records WHERE status = 'active' ORDER BY time_in DESC"
-    ).fetch_all(&mut **db).await
+    ).fetch_all(db.inner()).await
     .map_err(|e| {
         eprintln!("CURRENT SITIN ERROR: {}", e);
         (Status::InternalServerError, Json(ApiError { error: "Database error".into() }))
@@ -96,14 +95,14 @@ pub async fn current(
 
 #[get("/records")]
 pub async fn records(
-    mut db: Connection<Db>,
+    db: &State<Db>,
     token: BearerToken,
 ) -> Result<Json<Vec<SitInRecord>>, (Status, Json<ApiError>)> {
     require_admin(&token.0)?;
 
     let records: Vec<SitInRecord> = sqlx::query_as(
         "SELECT * FROM sit_in_records ORDER BY time_in DESC"
-    ).fetch_all(&mut **db).await
+    ).fetch_all(db.inner()).await
     .map_err(|e| {
         eprintln!("RECORDS ERROR: {}", e);
         (Status::InternalServerError, Json(ApiError { error: "Database error".into() }))
@@ -114,7 +113,7 @@ pub async fn records(
 
 #[get("/student/<id_number>")]
 pub async fn student_records(
-    mut db: Connection<Db>,
+    db: &State<Db>,
     id_number: &str,
     token: BearerToken,
 ) -> Result<Json<Vec<SitInRecord>>, (Status, Json<ApiError>)> {
@@ -123,7 +122,7 @@ pub async fn student_records(
 
     let records: Vec<SitInRecord> = sqlx::query_as(
         "SELECT * FROM sit_in_records WHERE student_id = ? ORDER BY time_in DESC"
-    ).bind(id_number).fetch_all(&mut **db).await
+    ).bind(id_number).fetch_all(db.inner()).await
     .map_err(|e| {
         eprintln!("STUDENT RECORDS ERROR: {}", e);
         (Status::InternalServerError, Json(ApiError { error: "Database error".into() }))
