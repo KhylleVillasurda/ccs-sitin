@@ -12,6 +12,7 @@ mod cors;
 mod feedback;
 mod notifications;
 mod reservation;
+mod lab_software;
 
 use rocket_db_pools::Database;
 use db::Db;
@@ -81,5 +82,11 @@ async fn rocket() -> _ {
             reservation::pc_control,
             reservation::lab_occupancy,
             reservation::time_slots,
+        ])
+        .mount("/api/lab-software", routes![
+            lab_software::list_software,
+            lab_software::add_software,
+            lab_software::remove_software,
+            lab_software::update_software,
         ])
 }

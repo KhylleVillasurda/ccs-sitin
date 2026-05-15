@@ -33,11 +33,14 @@ const CACHE_MS = {
   '/reports/leaderboard': 60_000,
   '/announcements/':      30_000,
   '/notifications/count': 15_000,
+  '/lab-software/':       120_000,  // software list changes rarely
 }
 
 const _get = api.get.bind(api)
 api.get = (url, config) => {
-  const ttl = CACHE_MS[url] ?? 0   // only cache explicitly listed routes
+  // Match by exact key OR by prefix (for URLs with query params like /lab-software/?lab=524)
+  const matchedKey = Object.keys(CACHE_MS).find(k => url === k || url.startsWith(k))
+  const ttl = matchedKey ? CACHE_MS[matchedKey] : 0
   if (ttl > 0) {
     const hit = _cache.get(url)
     if (hit && hit.expires > Date.now()) {
