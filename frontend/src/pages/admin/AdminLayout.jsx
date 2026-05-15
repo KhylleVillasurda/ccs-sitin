@@ -11,7 +11,8 @@ const NAV = [
   { to:'/admin/records',       label:'Records',      icon:'bi-journal-text'         },
   { to:'/admin/reservations',  label:'Reservations', icon:'bi-calendar-check'       },
   { to:'/admin/reports',       label:'Reports',      icon:'bi-bar-chart-line'       },
-  { to:'/admin/feedbacks',     label:'Feedbacks',    icon:'bi-chat-quote'           },
+  { to:'/admin/feedbacks',     label:'Feedbacks',     icon:'bi-chat-quote'           },
+  { to:'/admin/lab-software',  label:'Lab Software',  icon:'bi-laptop'               },
 ]
 
 export default function AdminLayout() {

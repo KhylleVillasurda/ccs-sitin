@@ -15,6 +15,7 @@ import AdminRecords       from './pages/admin/AdminRecords'
 import AdminReports       from './pages/admin/AdminReports'
 import AdminFeedbacks     from './pages/admin/AdminFeedbacks'
 import AdminReservations  from './pages/admin/AdminReservations'
+import AdminLabSoftware   from './pages/admin/AdminLabSoftware'
 import StudentDashboard   from './pages/student/StudentDashboard'
 
 // ── Error boundary — surfaces JS crashes as readable messages ─────────────
@@ -86,6 +87,7 @@ function AppRoutes() {
         <Route path="reservations" element={<AdminReservations />} />
         <Route path="reports"      element={<AdminReports />} />
         <Route path="feedbacks"    element={<AdminFeedbacks />} />
+        <Route path="lab-software" element={<AdminLabSoftware />} />
       </Route>
 
       <Route path="/student" element={

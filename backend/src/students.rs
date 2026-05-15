@@ -1,16 +1,15 @@
-use rocket::{http::Status, serde::json::Json};
-use rocket_db_pools::Connection;
+use rocket::{http::Status, serde::json::Json, State};
 use crate::{auth::{BearerToken, require_admin, verify_token}, db::Db, models::*};
 
 #[get("/")]
 pub async fn list(
-    mut db: Connection<Db>,
+    db: &State<Db>,
     token: BearerToken,
 ) -> Result<Json<Vec<PublicUser>>, (Status, Json<ApiError>)> {
     require_admin(&token.0)?;
     let users: Vec<User> = sqlx::query_as(
         "SELECT * FROM users WHERE role = 'student' ORDER BY last_name ASC"
-    ).fetch_all(&mut **db).await
+    ).fetch_all(db.inner()).await
     .map_err(|e| { eprintln!("LIST ERROR: {}", e);
         (Status::InternalServerError, Json(ApiError { error: "DB error".into() })) })?;
     Ok(Json(users.into_iter().map(|u| u.into()).collect()))
@@ -18,7 +17,7 @@ pub async fn list(
 
 #[get("/<id_number>")]
 pub async fn get_by_id(
-    mut db: Connection<Db>,
+    db: &State<Db>,
     id_number: &str,
     token: BearerToken,
 ) -> Result<Json<PublicUser>, (Status, Json<ApiError>)> {
@@ -28,7 +27,7 @@ pub async fn get_by_id(
         return Err((Status::Forbidden, Json(ApiError { error: "Access denied".into() })));
     }
     let user: Option<User> = sqlx::query_as("SELECT * FROM users WHERE id_number = ?")
-        .bind(id_number).fetch_optional(&mut **db).await
+        .bind(id_number).fetch_optional(db.inner()).await
         .map_err(|_| (Status::InternalServerError, Json(ApiError { error: "DB error".into() })))?;
     user.map(|u| Json(u.into()))
         .ok_or((Status::NotFound, Json(ApiError { error: "Student not found".into() })))
@@ -36,7 +35,7 @@ pub async fn get_by_id(
 
 #[put("/<id_number>", data = "<req>")]
 pub async fn update(
-    mut db: Connection<Db>,
+    db: &State<Db>,
     id_number: &str,
     req: Json<UpdateStudentRequest>,
     token: BearerToken,
@@ -57,14 +56,14 @@ pub async fn update(
     .bind(&req.last_name).bind(&req.first_name).bind(&req.middle_name)
     .bind(req.course_level).bind(&req.email).bind(&req.course)
     .bind(&req.address).bind(req.remaining_sessions).bind(id_number)
-    .execute(&mut **db).await
+    .execute(db.inner()).await
     .map_err(|_| (Status::InternalServerError, Json(ApiError { error: "Update failed".into() })))?;
     Ok(Json(ApiSuccess { message: "Student updated".into() }))
 }
 
 #[put("/profile/<id_number>", data = "<req>")]
 pub async fn update_profile(
-    mut db: Connection<Db>,
+    db: &State<Db>,
     id_number: &str,
     req: Json<UpdateProfileRequest>,
     token: BearerToken,
@@ -78,7 +77,7 @@ pub async fn update_profile(
     // Handle password change
     if let Some(ref new_pw) = req.new_password {
         let user: Option<User> = sqlx::query_as("SELECT * FROM users WHERE id_number = ?")
-            .bind(id_number).fetch_optional(&mut **db).await
+            .bind(id_number).fetch_optional(db.inner()).await
             .map_err(|_| (Status::InternalServerError, Json(ApiError { error: "DB error".into() })))?;
         let user = user.ok_or((Status::NotFound, Json(ApiError { error: "User not found".into() })))?;
         let current_pw = req.current_password.as_deref().unwrap_or("");
@@ -103,7 +102,7 @@ pub async fn update_profile(
         .bind(&req.last_name).bind(&req.first_name).bind(&req.middle_name)
         .bind(req.course_level).bind(&req.email).bind(&req.course)
         .bind(&req.address).bind(&req.profile_picture).bind(&hashed).bind(id_number)
-        .execute(&mut **db).await
+        .execute(db.inner()).await
         .map_err(|e| { eprintln!("PROFILE UPDATE ERROR: {}", e);
             (Status::InternalServerError, Json(ApiError { error: "Update failed".into() })) })?;
     } else {
@@ -124,7 +123,7 @@ pub async fn update_profile(
             .bind(&req.last_name).bind(&req.first_name).bind(&req.middle_name)
             .bind(req.course_level).bind(&req.email).bind(&req.course)
             .bind(&req.address).bind(id_number)
-            .execute(&mut **db).await
+            .execute(db.inner()).await
             .map_err(|_| (Status::InternalServerError, Json(ApiError { error: "Update failed".into() })))?;
         } else {
             sqlx::query(
@@ -142,34 +141,34 @@ pub async fn update_profile(
             .bind(&req.last_name).bind(&req.first_name).bind(&req.middle_name)
             .bind(req.course_level).bind(&req.email).bind(&req.course)
             .bind(&req.address).bind(&req.profile_picture).bind(id_number)
-            .execute(&mut **db).await
+            .execute(db.inner()).await
             .map_err(|_| (Status::InternalServerError, Json(ApiError { error: "Update failed".into() })))?;
         }
     }
 
     // Return the updated user so the frontend can refresh context immediately
     let updated: User = sqlx::query_as("SELECT * FROM users WHERE id_number = ?")
-        .bind(id_number).fetch_one(&mut **db).await
+        .bind(id_number).fetch_one(db.inner()).await
         .map_err(|_| (Status::InternalServerError, Json(ApiError { error: "Fetch failed".into() })))?;
     Ok(Json(updated.into()))
 }
 
 #[delete("/<id_number>")]
 pub async fn delete(
-    mut db: Connection<Db>,
+    db: &State<Db>,
     id_number: &str,
     token: BearerToken,
 ) -> Result<Json<ApiSuccess>, (Status, Json<ApiError>)> {
     require_admin(&token.0)?;
     sqlx::query("DELETE FROM users WHERE id_number = ? AND role = 'student'")
-        .bind(id_number).execute(&mut **db).await
+        .bind(id_number).execute(db.inner()).await
         .map_err(|_| (Status::InternalServerError, Json(ApiError { error: "Delete failed".into() })))?;
     Ok(Json(ApiSuccess { message: "Student deleted".into() }))
 }
 
 #[post("/", data = "<req>")]
 pub async fn add(
-    mut db: Connection<Db>,
+    db: &State<Db>,
     req: Json<RegisterRequest>,
     token: BearerToken,
 ) -> Result<Json<ApiSuccess>, (Status, Json<ApiError>)> {
@@ -187,19 +186,19 @@ pub async fn add(
     .bind(req.email.as_deref().unwrap_or(""))
     .bind(req.course.as_deref().unwrap_or("BSIT"))
     .bind(req.address.as_deref().unwrap_or(""))
-    .execute(&mut **db).await
+    .execute(db.inner()).await
     .map_err(|_| (Status::InternalServerError, Json(ApiError { error: "Insert failed".into() })))?;
     Ok(Json(ApiSuccess { message: "Student added".into() }))
 }
 
 #[post("/reset-sessions")]
 pub async fn reset_all_sessions(
-    mut db: Connection<Db>,
+    db: &State<Db>,
     token: BearerToken,
 ) -> Result<Json<ApiSuccess>, (Status, Json<ApiError>)> {
     require_admin(&token.0)?;
     sqlx::query("UPDATE users SET remaining_sessions = 30 WHERE role = 'student'")
-        .execute(&mut **db).await
+        .execute(db.inner()).await
         .map_err(|_| (Status::InternalServerError, Json(ApiError { error: "Reset failed".into() })))?;
     Ok(Json(ApiSuccess { message: "All sessions reset to 30".into() }))
 }
@@ -208,12 +207,12 @@ pub async fn reset_all_sessions(
 /// Called individually by the frontend so leaderboard/list payloads stay small.
 #[get("/avatar/<id_number>")]
 pub async fn get_avatar(
-    mut db: Connection<Db>,
+    db: &State<Db>,
     id_number: &str,
 ) -> Result<Json<serde_json::Value>, (Status, Json<ApiError>)> {
     let row: Option<(Option<String>,)> = sqlx::query_as(
         "SELECT profile_picture FROM users WHERE id_number = ?"
-    ).bind(id_number).fetch_optional(&mut **db).await
+    ).bind(id_number).fetch_optional(db.inner()).await
     .map_err(|_| (Status::InternalServerError, Json(ApiError { error: "DB error".into() })))?;
 
     match row {

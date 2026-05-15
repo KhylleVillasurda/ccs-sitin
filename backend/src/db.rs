@@ -1,11 +1,9 @@
 use rocket::fairing::{self, Fairing, Info, Kind};
 use rocket::{Rocket, Build};
-use rocket_db_pools::Database;
 use sqlx::MySqlPool;
 
-#[derive(Database)]
-#[database("main")]
-pub struct Db(MySqlPool);
+// `Db` is now a type alias for `sqlx::MySqlPool`
+pub type Db = MySqlPool;
 
 pub struct DbInitFairing;
 
@@ -16,12 +14,16 @@ impl Fairing for DbInitFairing {
     }
 
     async fn on_ignite(&self, rocket: Rocket<Build>) -> fairing::Result {
-        let db = match Db::fetch(&rocket) {
-            Some(db) => db,
-            None => return Err(rocket),
+        // Attempt to retrieve the managed MySqlPool from Rocket's state
+        let pool = match rocket.state::<MySqlPool>() {
+            Some(p) => p,
+            None => {
+                eprintln!("Error: MySqlPool not managed by Rocket. Ensure it's managed before attaching DbInitFairing.");
+                return Err(rocket);
+            }
         };
-        let pool = &db.0;
 
+        // Use the obtained pool for migrations and seeding
         // ── users ─────────────────────────────────────────────────────────
         sqlx::query(r#"
             CREATE TABLE IF NOT EXISTS users (
@@ -42,7 +44,7 @@ impl Fairing for DbInitFairing {
             )
         "#).execute(pool).await.ok();
 
-        if let Err(e) = sqlx::query(
+        if let Err(_e) = sqlx::query(
             "ALTER TABLE users ADD COLUMN profile_picture LONGTEXT DEFAULT NULL"
         ).execute(pool).await {
             // Log but don't crash (expected if column already exists)
@@ -91,7 +93,7 @@ impl Fairing for DbInitFairing {
             )
         "#).execute(pool).await.ok();
 
-        if let Err(e) = sqlx::query(
+        if let Err(_e) = sqlx::query(
             "ALTER TABLE feedbacks ADD COLUMN rating TINYINT DEFAULT NULL"
         ).execute(pool).await {
             // eprintln!("Migration notice (feedbacks.rating): {}", e);
@@ -111,7 +113,7 @@ impl Fairing for DbInitFairing {
             )
         "#).execute(pool).await.ok();
 
-        if let Err(e) = sqlx::query(
+        if let Err(_e) = sqlx::query(
             "ALTER TABLE notifications ADD COLUMN link VARCHAR(255) DEFAULT NULL"
         ).execute(pool).await {
             // eprintln!("Migration notice (notifications.link): {}", e);
@@ -137,13 +139,13 @@ impl Fairing for DbInitFairing {
             )
         "#).execute(pool).await.ok();
 
-        if let Err(e) = sqlx::query(
+        if let Err(_e) = sqlx::query(
             "ALTER TABLE reservations ADD COLUMN reservation_date DATE DEFAULT (CURDATE())"
         ).execute(pool).await {
             // eprintln!("Migration notice (reservation_date): {}", e);
         }
 
-        if let Err(e) = sqlx::query(
+        if let Err(_e) = sqlx::query(
             "ALTER TABLE reservations ADD COLUMN time_slot VARCHAR(50) DEFAULT NULL"
         ).execute(pool).await {
             // eprintln!("Migration notice (time_slot): {}", e);
@@ -160,9 +162,74 @@ impl Fairing for DbInitFairing {
             )
         "#).execute(pool).await.ok();
 
+        // ── lab_software ──────────────────────────────────────────────────
+        sqlx::query(r#"
+            CREATE TABLE IF NOT EXISTS lab_software (
+                id          BIGINT AUTO_INCREMENT PRIMARY KEY,
+                lab         VARCHAR(50)  NOT NULL,
+                name        VARCHAR(150) NOT NULL,
+                icon        VARCHAR(100) DEFAULT NULL,
+                description VARCHAR(500) DEFAULT NULL,
+                version     VARCHAR(50)  DEFAULT NULL,
+                category    VARCHAR(100) DEFAULT 'General',
+                UNIQUE KEY uq_lab_software (lab, name)
+            )
+        "#).execute(pool).await.ok();
+
+        // Seed default software for all labs if the table is empty
+        let sw_count: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM lab_software")
+            .fetch_one(pool).await.unwrap_or((0,));
+
+        if sw_count.0 == 0 {
+            let defaults: &[(&str, &str, &str, &str, &str)] = &[
+                // (lab, name, icon, category, description)
+                ("524", "Visual Studio Code", "bi-code-slash",     "IDE",         "Lightweight source code editor by Microsoft"),
+                ("524", "Visual Studio 2022", "bi-window",          "IDE",         "Full-featured IDE for .NET and C++ development"),
+                ("524", "Python 3",           "bi-filetype-py",    "Language",    "Python interpreter and standard library"),
+                ("524", "Java JDK 21",        "bi-cup-hot-fill",   "Language",    "Java Development Kit for Java applications"),
+                ("524", "GCC / MinGW",        "bi-terminal",       "Compiler",    "C/C++ compiler toolchain"),
+                ("524", "Git",                "bi-git",            "Version Control", "Distributed version control system"),
+                ("524", "FileZilla",          "bi-folder-symlink", "Networking",  "FTP/SFTP client for file transfers"),
+                ("526", "Visual Studio Code", "bi-code-slash",     "IDE",         "Lightweight source code editor by Microsoft"),
+                ("526", "Visual Studio 2022", "bi-window",          "IDE",         "Full-featured IDE for .NET and C++ development"),
+                ("526", "Python 3",           "bi-filetype-py",    "Language",    "Python interpreter and standard library"),
+                ("526", "Java JDK 21",        "bi-cup-hot-fill",   "Language",    "Java Development Kit for Java applications"),
+                ("526", "Cisco Packet Tracer","bi-router",         "Networking",  "Network simulation tool by Cisco"),
+                ("526", "FileZilla",          "bi-folder-symlink", "Networking",  "FTP/SFTP client for file transfers"),
+                ("528", "Visual Studio Code", "bi-code-slash",     "IDE",         "Lightweight source code editor by Microsoft"),
+                ("528", "VMware Workstation", "bi-hdd-rack",       "Virtualization","Type-2 hypervisor for running virtual machines"),
+                ("528", "Python 3",           "bi-filetype-py",    "Language",    "Python interpreter and standard library"),
+                ("528", "Java JDK 21",        "bi-cup-hot-fill",   "Language",    "Java Development Kit for Java applications"),
+                ("528", "GCC / MinGW",        "bi-terminal",       "Compiler",    "C/C++ compiler toolchain"),
+                ("528", "Git",                "bi-git",            "Version Control", "Distributed version control system"),
+                ("530", "Visual Studio Code", "bi-code-slash",     "IDE",         "Lightweight source code editor by Microsoft"),
+                ("530", "Visual Studio 2022", "bi-window",          "IDE",         "Full-featured IDE for .NET and C++ development"),
+                ("530", "Python 3",           "bi-filetype-py",    "Language",    "Python interpreter and standard library"),
+                ("530", "Java JDK 21",        "bi-cup-hot-fill",   "Language",    "Java Development Kit for Java applications"),
+                ("530", "Cisco Packet Tracer","bi-router",         "Networking",  "Network simulation tool by Cisco"),
+                ("530", "VMware Workstation", "bi-hdd-rack",       "Virtualization","Type-2 hypervisor for running virtual machines"),
+                ("530", "FileZilla",          "bi-folder-symlink", "Networking",  "FTP/SFTP client for file transfers"),
+                ("542", "Visual Studio Code", "bi-code-slash",     "IDE",         "Lightweight source code editor by Microsoft"),
+                ("542", "Visual Studio 2022", "bi-window",          "IDE",         "Full-featured IDE for .NET and C++ development"),
+                ("542", "Python 3",           "bi-filetype-py",    "Language",    "Python interpreter and standard library"),
+                ("542", "Java JDK 21",        "bi-cup-hot-fill",   "Language",    "Java Development Kit for Java applications"),
+                ("542", "GCC / MinGW",        "bi-terminal",       "Compiler",    "C/C++ compiler toolchain"),
+                ("542", "Cisco Packet Tracer","bi-router",         "Networking",  "Network simulation tool by Cisco"),
+                ("542", "Git",                "bi-git",            "Version Control", "Distributed version control system"),
+            ];
+            for (lab, name, icon, category, desc) in defaults {
+                sqlx::query(
+                    "INSERT IGNORE INTO lab_software (lab, name, icon, category, description)
+                     VALUES (?, ?, ?, ?, ?)"
+                ).bind(lab).bind(name).bind(icon).bind(category).bind(desc)
+                 .execute(pool).await.ok();
+            }
+        }
+
         // ── Indexes ───────────────────────────────────────────────────────
         // Note: MySQL 8.0 does not support CREATE INDEX IF NOT EXISTS.
         // These will fail gracefully if they already exist because of .ok().
+        sqlx::query("CREATE INDEX idx_lab_software_lab ON lab_software(lab, category)").execute(pool).await.ok();
         sqlx::query("CREATE INDEX idx_sitin_student ON sit_in_records(student_id, status)").execute(pool).await.ok();
         sqlx::query("CREATE INDEX idx_sitin_status ON sit_in_records(status)").execute(pool).await.ok();
         sqlx::query("CREATE INDEX idx_res_conflict ON reservations(lab, pc_number, reservation_date, time_slot, status)").execute(pool).await.ok();

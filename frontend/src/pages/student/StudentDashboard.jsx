@@ -22,12 +22,12 @@ const PURPOSES = ['C Programming','Java','PHP','ASP.Net','C#','Python','Database
 const LABS = ['524','526','528','530','542']
 const LAB_ROWS = 7
 const LAB_COLS = 7
-const DIVIDER_AFTER = [2, 4, 6]  // 1-indexed rows after which a divider appears
+const DIVIDER_AFTER = [2, 4, 6]
 
 /* ── Session summary helpers ── */
 function parseDuration(r) {
   if (!r.time_in || !r.time_out) return 0
-  return (new Date(r.time_out) - new Date(r.time_in)) / 1000 / 60 // minutes
+  return (new Date(r.time_out) - new Date(r.time_in)) / 1000 / 60
 }
 function fmtDuration(minutes) {
   if (!minutes || minutes < 0) return '—'
@@ -57,8 +57,6 @@ function SeatPickerModal({ lab, date, slot, onSelect, onClose }) {
     if (occupancy.reserved?.includes(pc)) return 'occupied'
     return 'free'
   }
-
-  const pcs = Array.from({ length: LAB_ROWS * LAB_COLS }, (_, i) => i + 1)
 
   return (
     <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
@@ -121,12 +119,11 @@ const TIME_SLOTS = [
 ]
 
 function todayStr() {
-  const d = new Date()
-  return d.toISOString().slice(0, 10)
+  return new Date().toISOString().slice(0, 10)
 }
 function maxDateStr() {
   const d = new Date()
-  d.setDate(d.getDate() + 14) // allow booking up to 2 weeks ahead
+  d.setDate(d.getDate() + 14)
   return d.toISOString().slice(0, 10)
 }
 function fmtDisplayDate(iso) {
@@ -136,15 +133,25 @@ function fmtDisplayDate(iso) {
 }
 
 function ReservationModal({ onClose, onSuccess }) {
-  const [step, setStep]   = useState(1) // 1:details  2:pick PC  3:confirm
+  const [step, setStep]   = useState(1)
   const [form, setForm]   = useState({
     lab: '524', purpose: 'C Programming', notes: '',
     reservation_date: todayStr(),
     time_slot: TIME_SLOTS[0],
   })
-  const [selectedPc, setSelectedPc] = useState(null)
-  const [loading,    setLoading]    = useState(false)
-  const [error,      setError]      = useState('')
+  const [selectedPc,   setSelectedPc]   = useState(null)
+  const [loading,      setLoading]      = useState(false)
+  const [error,        setError]        = useState('')
+  const [labSoftware,  setLabSoftware]  = useState([])
+  const [swLoading,    setSwLoading]    = useState(false)
+
+  useEffect(() => {
+    setSwLoading(true)
+    api.get(`/lab-software/?lab=${form.lab}`)
+      .then(r => setLabSoftware(r.data))
+      .catch(() => setLabSoftware([]))
+      .finally(() => setSwLoading(false))
+  }, [form.lab])
 
   const handleSelect = (pc) => { setSelectedPc(pc); setStep(3) }
 
@@ -185,7 +192,7 @@ function ReservationModal({ onClose, onSuccess }) {
                 width:20, height:20, borderRadius:'50%', display:'inline-flex',
                 alignItems:'center', justifyContent:'center', fontSize:'0.65rem', fontWeight:700,
                 background: step > i+1 ? 'var(--green)' : step === i+1 ? 'var(--accent)' : 'var(--bg3)',
-                color: step >= i+1 ? (step===i+1?'var(--bg)':'var(--bg)') : 'var(--fg-dim)',
+                color: step >= i+1 ? 'var(--bg)' : 'var(--fg-dim)',
               }}>{step > i+1 ? <i className="bi bi-check-lg"/> : i+1}</span>
               <span style={{ color: step===i+1?'var(--fg)':'var(--fg-dim)', fontWeight:step===i+1?600:400 }}>{s}</span>
               {i < 2 && <span style={{ opacity:0.3 }}>›</span>}
@@ -193,7 +200,6 @@ function ReservationModal({ onClose, onSuccess }) {
           ))}
         </div>
 
-        {/* ── Step 1: Details ── */}
         {step === 1 && (
           <>
             <div className="form-row">
@@ -235,6 +241,43 @@ function ReservationModal({ onClose, onSuccess }) {
               <input className="input" placeholder="Any additional notes…" value={form.notes}
                 onChange={e => setForm(f=>({...f,notes:e.target.value}))} />
             </div>
+
+            <div style={{
+              background:'var(--bg2)', border:'1px solid var(--border)', borderRadius:10,
+              padding:'0.85rem 1rem', marginBottom:'0.25rem',
+            }}>
+              <div style={{ display:'flex', alignItems:'center', gap:'0.5rem', marginBottom:'0.65rem' }}>
+                <i className="bi bi-laptop" style={{ color:'var(--accent)', fontSize:'0.95rem' }} />
+                <span style={{ fontWeight:600, fontSize:'0.83rem', color:'var(--fg)' }}>
+                  Available Software — Lab {form.lab}
+                </span>
+              </div>
+              {swLoading ? (
+                <div style={{ fontSize:'0.78rem', color:'var(--fg-dim)' }}>
+                  <i className="bi bi-hourglass-split" /> Loading…
+                </div>
+              ) : labSoftware.length === 0 ? (
+                <div style={{ fontSize:'0.78rem', color:'var(--fg-dim)' }}>
+                  No software listed for this lab yet.
+                </div>
+              ) : (
+                <div style={{ display:'flex', flexWrap:'wrap', gap:'0.4rem' }}>
+                  {labSoftware.map(sw => (
+                    <span key={sw.id} title={sw.description || sw.name} style={{
+                      display:'inline-flex', alignItems:'center', gap:'0.35rem',
+                      padding:'0.25rem 0.6rem', borderRadius:20,
+                      background:'var(--bg3)', border:'1px solid var(--border)',
+                      fontSize:'0.76rem', color:'var(--fg)', cursor:'default',
+                    }}>
+                      <i className={`bi ${sw.icon || 'bi-app'}`} style={{ color:'var(--accent)', fontSize:'0.8rem' }} />
+                      {sw.name}
+                      {sw.version && <span style={{ opacity:0.55, fontSize:'0.68rem' }}>v{sw.version}</span>}
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+
             <div style={{ display:'flex', gap:'0.75rem', justifyContent:'flex-end', marginTop:'0.5rem' }}>
               <button className="btn btn-ghost" onClick={onClose}>Cancel</button>
               <button className="btn btn-primary" onClick={() => setStep(2)}>
@@ -244,7 +287,6 @@ function ReservationModal({ onClose, onSuccess }) {
           </>
         )}
 
-        {/* ── Step 2: Seat Picker ── */}
         {step === 2 && (
           <>
             <div style={{ fontSize:'0.8rem', color:'var(--fg-dim)', marginBottom:'0.75rem', display:'flex', gap:'0.5rem', alignItems:'center', flexWrap:'wrap' }}>
@@ -262,7 +304,6 @@ function ReservationModal({ onClose, onSuccess }) {
           </>
         )}
 
-        {/* ── Step 3: Confirm ── */}
         {step === 3 && (
           <>
             <div style={{ background:'var(--bg2)', borderRadius:8, padding:'1rem', marginBottom:'1rem', border:'1px solid var(--border)' }}>
@@ -279,7 +320,7 @@ function ReservationModal({ onClose, onSuccess }) {
               </div>
             </div>
             <p style={{ fontSize:'0.78rem', color:'var(--fg-dim)', marginBottom:'1rem', display:'flex', gap:'0.4rem' }}>
-              <i className="bi bi-bell" /> You’ll be notified once the admin reviews your request.
+              <i className="bi bi-bell" /> You'll be notified once the admin reviews your request.
             </p>
             <div style={{ display:'flex', gap:'0.75rem', justifyContent:'flex-end' }}>
               <button className="btn btn-ghost" onClick={() => setStep(2)}>
@@ -296,7 +337,9 @@ function ReservationModal({ onClose, onSuccess }) {
   )
 }
 
-/* ── Main Dashboard ── */
+/* ══════════════════════════════════════
+   Main Dashboard
+   ══════════════════════════════════════ */
 export default function StudentDashboard() {
   const { user, login, logout } = useAuth()
   const { theme, toggle } = useTheme()
@@ -305,13 +348,26 @@ export default function StudentDashboard() {
   const rowRefs = useRef({})
   const [highlightId, setHighlightId] = useState(null)
 
-  const [records,        setRecords]        = useState([])
-  const [announcements,  setAnnouncements]  = useState([])
-  const [reservations,   setReservations]   = useState([])
-  const [loading,        setLoading]        = useState(true)
-  const [showEdit,       setShowEdit]       = useState(false)
-  const [showReservation,setShowReservation]= useState(false)
-  const [activeTab,      setActiveTab]      = useState('history') // 'history' | 'reservations'
+  const [records,         setRecords]         = useState([])
+  const [announcements,   setAnnouncements]   = useState([])
+  const [reservations,    setReservations]    = useState([])
+  const [loading,         setLoading]         = useState(true)
+  const [showEdit,        setShowEdit]        = useState(false)
+  const [showReservation, setShowReservation] = useState(false)
+  const [activeTab,       setActiveTab]       = useState('history')
+
+  // Lab software explorer (sidebar)
+  const [explorerLab,      setExplorerLab]      = useState('524')
+  const [explorerSoftware, setExplorerSoftware] = useState([])
+  const [explorerLoading,  setExplorerLoading]  = useState(false)
+
+  useEffect(() => {
+    setExplorerLoading(true)
+    api.get(`/lab-software/?lab=${explorerLab}`)
+      .then(r => setExplorerSoftware(r.data))
+      .catch(() => setExplorerSoftware([]))
+      .finally(() => setExplorerLoading(false))
+  }, [explorerLab])
 
   // Feedback state
   const [feedbackFor,    setFeedbackFor]    = useState(null)
@@ -347,7 +403,7 @@ export default function StudentDashboard() {
     loadReservations()
   }, [load, loadMyFeedbacks, loadReservations])
 
-  // Scroll to feedback if coming from notification
+  // Scroll to feedback from notification
   useEffect(() => {
     const params = new URLSearchParams(location.search)
     const feedbackId = params.get('feedback')
@@ -380,14 +436,22 @@ export default function StudentDashboard() {
   const active = records.filter(r => r.status === 'active')
   const done   = records.filter(r => r.status === 'done')
 
-  /* ── Session Summary Computation ── */
   const doneWithTimes = done.filter(r => r.time_in && r.time_out)
   const totalMinutes  = doneWithTimes.reduce((sum, r) => sum + parseDuration(r), 0)
   const avgMinutes    = doneWithTimes.length > 0 ? totalMinutes / doneWithTimes.length : 0
   const longestMin    = doneWithTimes.length > 0 ? Math.max(...doneWithTimes.map(parseDuration)) : 0
 
+  // Group lab software by category
+  const groupedSoftware = explorerSoftware.reduce((acc, s) => {
+    const cat = s.category || 'General'
+    if (!acc[cat]) acc[cat] = []
+    acc[cat].push(s)
+    return acc
+  }, {})
+
   return (
     <div className="student-page">
+      {/* ── Modals ── */}
       {showEdit && (
         <EditProfile user={user} onClose={() => setShowEdit(false)} onSaved={handleProfileSaved} />
       )}
@@ -438,341 +502,445 @@ export default function StudentDashboard() {
         </div>
       </header>
 
-      <div className="student-content">
+      {/* ── Body: Sidebar + Main ── */}
+      <div className="student-body">
 
-        {/* ── Welcome ── */}
-        <div className="student-welcome">
-          <h1>Welcome, <span style={{ color:'var(--accent)' }}>{user.first_name} {user.last_name}</span></h1>
-          <p style={{ color:'var(--fg-dim)', marginTop:'0.2rem', fontSize:'0.875rem' }}>
-            {user.id_number} &nbsp;·&nbsp; {user.course} &nbsp;·&nbsp; Year {user.course_level}
-          </p>
-        </div>
+        {/* ════════════════
+            SIDEBAR
+            ════════════════ */}
+        <aside className="student-sidebar">
+          <div className="sb-inner">
 
-        {/* ── Feedback/reservation banner ── */}
-        {feedbackBanner && (
-          <div style={{
-            background:'rgba(127,187,179,0.12)', border:'1px solid rgba(127,187,179,0.3)',
-            borderRadius:'8px', padding:'0.7rem 1rem', marginBottom:'1rem',
-            fontSize:'0.82rem', color:'var(--blue)', display:'flex', gap:'0.5rem', alignItems:'center',
-          }}>
-            <i className="bi bi-check-circle-fill" /> {feedbackBanner}
-          </div>
-        )}
-
-        {/* ── Stats ── */}
-        <div className="student-stats">
-          <div className="stat-card">
-            <div className="stat-icon" style={{ background:'rgba(219,188,127,0.15)' }}>
-              <i className="bi bi-ticket-perforated" style={{ color:'var(--accent)', fontSize:'1.2rem' }} />
-            </div>
-            <div>
-              <div className="stat-value" style={{ color:'var(--accent)' }}>{user.remaining_sessions}</div>
-              <div className="stat-label">Sessions Remaining</div>
-            </div>
-          </div>
-          <div className="stat-card">
-            <div className="stat-icon" style={{ background:'rgba(167,192,128,0.15)' }}>
-              <i className="bi bi-display" style={{ color:'var(--green)', fontSize:'1.2rem' }} />
-            </div>
-            <div>
-              <div className="stat-value" style={{ color:'var(--green)' }}>{active.length}</div>
-              <div className="stat-label">Active Sit-in</div>
-            </div>
-          </div>
-          <div className="stat-card">
-            <div className="stat-icon" style={{ background:'rgba(127,187,179,0.15)' }}>
-              <i className="bi bi-check2-circle" style={{ color:'var(--blue)', fontSize:'1.2rem' }} />
-            </div>
-            <div>
-              <div className="stat-value" style={{ color:'var(--blue)' }}>{done.length}</div>
-              <div className="stat-label">Completed Sessions</div>
-            </div>
-          </div>
-        </div>
-
-        {/* ── Session Summary Card ── */}
-        {done.length > 0 && (
-          <div className="card session-summary-card">
-            <div className="section-title" style={{ marginBottom:'1rem' }}>
-              <i className="bi bi-bar-chart-line" /> Session Summary
-            </div>
-            <div className="summary-grid">
-              <div className="summary-item">
-                <div className="summary-icon" style={{ background:'rgba(219,188,127,0.1)' }}>
-                  <i className="bi bi-clock" style={{ color:'var(--accent)' }} />
-                </div>
-                <div className="summary-val">{fmtDuration(totalMinutes)}</div>
-                <div className="summary-lbl">Total Hours</div>
+            {/* Profile */}
+            <div className="sb-profile">
+              <div className="sb-avatar-wrap" onClick={() => setShowEdit(true)} title="Click to change photo">
+                <UserAvatar user={user} size={68} fontSize="1.4rem" />
+                <div className="sb-avatar-overlay"><i className="bi bi-camera" /></div>
               </div>
-              <div className="summary-item">
-                <div className="summary-icon" style={{ background:'rgba(167,192,128,0.1)' }}>
-                  <i className="bi bi-journal-check" style={{ color:'var(--green)' }} />
+              <div>
+                <div className="sb-name">
+                  {user.first_name}{user.middle_name ? ' '+user.middle_name[0]+'.' : ''} {user.last_name}
                 </div>
-                <div className="summary-val">{done.length}</div>
-                <div className="summary-lbl">Sessions Done</div>
-              </div>
-              <div className="summary-item">
-                <div className="summary-icon" style={{ background:'rgba(127,187,179,0.1)' }}>
-                  <i className="bi bi-calculator" style={{ color:'var(--blue)' }} />
+                <div className="sb-sub">{user.course} · Year {user.course_level}</div>
+                <div className="sb-id">
+                  <i className="bi bi-hash" style={{ fontSize:'0.7rem' }} />
+                  {user.id_number}
                 </div>
-                <div className="summary-val">{fmtDuration(Math.round(avgMinutes))}</div>
-                <div className="summary-lbl">Avg Duration</div>
-              </div>
-              <div className="summary-item">
-                <div className="summary-icon" style={{ background:'rgba(214,153,182,0.1)' }}>
-                  <i className="bi bi-trophy" style={{ color:'var(--purple)' }} />
-                </div>
-                <div className="summary-val">{fmtDuration(Math.round(longestMin))}</div>
-                <div className="summary-lbl">Longest Session</div>
               </div>
             </div>
-          </div>
-        )}
 
-        {/* ── Active sit-in banner ── */}
-        {active.length > 0 && (
-          <div className="active-sitin-banner">
-            <i className="bi bi-circle-fill" style={{ color:'var(--green)', fontSize:'0.55rem' }} />
-            <span>
-              <strong>Currently sitting in:</strong> {active[0].purpose} — Lab {active[0].lab}
-            </span>
-            <span style={{ marginLeft:'auto', fontSize:'0.78rem', color:'var(--fg-dim)' }}>
-              Since {active[0].time_in?.slice(0,16).replace('T',' ')}
-            </span>
-          </div>
-        )}
-
-        {/* ── Main grid ── */}
-        <div className="student-main-grid">
-          {/* LEFT — Announcements */}
-          <div className="student-announcements-col">
-            <div className="card">
-              <div className="section-title"><i className="bi bi-megaphone" /> Announcements</div>
-              {announcements.length === 0 ? (
-                <div className="empty-state">
-                  <i className="bi bi-inbox" style={{ fontSize:'2rem', opacity:0.4 }} />
-                  <div className="empty-state-text" style={{ marginTop:'0.5rem' }}>No announcements yet</div>
-                </div>
-              ) : (
-                <div className="ann-list">
-                  {announcements.map((a, i) => (
-                    <div key={a.id} className={`ann-item${i===0?' ann-item-latest':''}`}>
-                      <div className="ann-meta">
-                        <i className="bi bi-person-circle" />
-                        <span>{a.author}</span>
-                        <span className="ann-date">
-                          {a.created_at ? new Date(a.created_at).toLocaleDateString('en-PH', { year:'numeric', month:'short', day:'numeric' }) : ''}
-                        </span>
-                        {i === 0 && <span className="badge badge-orange" style={{ fontSize:'0.65rem' }}>Latest</span>}
-                      </div>
-                      <p className="ann-content">{a.content}</p>
-                    </div>
-                  ))}
+            {/* Contact info */}
+            <div className="sb-section">
+              <div className="sb-section-label">Contact</div>
+              {user.email && (
+                <div className="sb-info-row">
+                  <i className="bi bi-envelope" />
+                  <span className="sb-info-label">Email</span>
+                  <span className="sb-info-val">{user.email}</span>
                 </div>
               )}
+              {user.address && (
+                <div className="sb-info-row">
+                  <i className="bi bi-geo-alt" />
+                  <span className="sb-info-label">Address</span>
+                  <span className="sb-info-val">{user.address}</span>
+                </div>
+              )}
+              {!user.email && !user.address && (
+                <div style={{ fontSize:'0.73rem', color:'var(--fg-dim)' }}>No contact info set.</div>
+              )}
             </div>
-          </div>
 
-          {/* RIGHT — Profile card */}
-          <div className="student-side-col">
-            <div className="card student-profile-card">
-              <div className="section-title"><i className="bi bi-person-badge" /> My Profile</div>
-              <div className="profile-avatar-row">
-                <div className="profile-avatar-clickable" onClick={() => setShowEdit(true)} title="Click to change photo">
-                  <UserAvatar user={user} size={72} fontSize="1.5rem" />
-                  <div className="profile-avatar-overlay"><i className="bi bi-camera" /></div>
+            {/* Stats */}
+            <div className="sb-stats">
+              <div className="sb-stat sb-stat-full">
+                <div className="sb-stat-icon" style={{ background:'rgba(219,188,127,0.15)' }}>
+                  <i className="bi bi-ticket-perforated" style={{ color:'var(--accent)' }} />
                 </div>
                 <div>
-                  <div style={{ fontWeight:600, fontSize:'0.95rem' }}>
-                    {user.first_name}{user.middle_name ? ' '+user.middle_name[0]+'.' : ''} {user.last_name}
-                  </div>
-                  <div style={{ color:'var(--fg-dim)', fontSize:'0.8rem', marginTop:'0.15rem' }}>
-                    {user.course} — Year {user.course_level}
-                  </div>
+                  <div className="sb-stat-val" style={{ color:'var(--accent)' }}>{user.remaining_sessions}</div>
+                  <div className="sb-stat-lbl">Sessions Remaining</div>
                 </div>
               </div>
-              <div className="divider" style={{ margin:'1rem 0' }} />
-              <div className="profile-details">
-                <div className="profile-detail-row">
-                  <i className="bi bi-hash" />
-                  <span className="pd-label">Student ID</span>
-                  <span className="pd-value" style={{ fontFamily:'monospace', color:'var(--blue)' }}>{user.id_number}</span>
+              <div className="sb-stat">
+                <div className="sb-stat-icon" style={{ background:'rgba(167,192,128,0.15)' }}>
+                  <i className="bi bi-display" style={{ color:'var(--green)', fontSize:'0.8rem' }} />
                 </div>
-                {user.email && (
-                  <div className="profile-detail-row">
-                    <i className="bi bi-envelope" />
-                    <span className="pd-label">Email</span>
-                    <span className="pd-value">{user.email}</span>
+                <div>
+                  <div className="sb-stat-val" style={{ color:'var(--green)' }}>{active.length}</div>
+                  <div className="sb-stat-lbl">Active</div>
+                </div>
+              </div>
+              <div className="sb-stat">
+                <div className="sb-stat-icon" style={{ background:'rgba(127,187,179,0.15)' }}>
+                  <i className="bi bi-check2-circle" style={{ color:'var(--blue)', fontSize:'0.8rem' }} />
+                </div>
+                <div>
+                  <div className="sb-stat-val" style={{ color:'var(--blue)' }}>{done.length}</div>
+                  <div className="sb-stat-lbl">Done</div>
+                </div>
+              </div>
+            </div>
+
+            {/* Actions */}
+            <div className="sb-actions">
+              <button
+                className="btn btn-primary btn-sm"
+                style={{ justifyContent:'center' }}
+                onClick={() => setShowReservation(true)}
+              >
+                <i className="bi bi-calendar-plus" /> Reserve a PC
+              </button>
+              <button
+                className="btn btn-ghost btn-sm"
+                style={{ justifyContent:'center' }}
+                onClick={() => setShowEdit(true)}
+              >
+                <i className="bi bi-pencil-square" /> Edit Profile
+              </button>
+            </div>
+
+            {/* Lab Software Explorer */}
+            <div className="sb-lab-section">
+              <div className="sb-lab-header">
+                <div className="sb-lab-title">
+                  <i className="bi bi-laptop" /> Lab Software
+                </div>
+              </div>
+              <div className="sb-lab-tabs">
+                {LABS.map(l => (
+                  <button
+                    key={l}
+                    className={`sb-lab-tab${explorerLab === l ? ' active' : ''}`}
+                    onClick={() => setExplorerLab(l)}
+                  >
+                    {l}
+                  </button>
+                ))}
+              </div>
+              <div className="sb-lab-scroll">
+                {explorerLoading ? (
+                  <div style={{ fontSize:'0.72rem', color:'var(--fg-dim)', textAlign:'center', padding:'0.5rem' }}>
+                    <i className="bi bi-hourglass-split" /> Loading…
                   </div>
-                )}
-                {user.address && (
-                  <div className="profile-detail-row">
-                    <i className="bi bi-geo-alt" />
-                    <span className="pd-label">Address</span>
-                    <span className="pd-value">{user.address}</span>
+                ) : explorerSoftware.length === 0 ? (
+                  <div style={{ fontSize:'0.72rem', color:'var(--fg-dim)', textAlign:'center', padding:'0.5rem' }}>
+                    No software listed for Lab {explorerLab}.
                   </div>
+                ) : (
+                  Object.entries(groupedSoftware).sort(([a],[b]) => a.localeCompare(b)).map(([cat, items]) => (
+                    <div key={cat}>
+                      <div className="sb-lab-cat">{cat}</div>
+                      {items.map(sw => (
+                        <div key={sw.id} className="sb-lab-item">
+                          <div className="sb-lab-icon">
+                            <i className={`bi ${sw.icon || 'bi-app'}`} />
+                          </div>
+                          <div className="sb-lab-text">
+                            <div className="sb-lab-item-name">
+                              {sw.name}
+                              {sw.version && <span className="sb-lab-ver"> v{sw.version}</span>}
+                            </div>
+                            {sw.description && (
+                              <div className="sb-lab-item-desc">{sw.description}</div>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ))
                 )}
               </div>
-              <div style={{ display:'flex', gap:'0.5rem', marginTop:'1rem' }}>
-                <button className="btn btn-ghost btn-sm" style={{ flex:1, justifyContent:'center' }} onClick={() => setShowEdit(true)}>
-                  <i className="bi bi-pencil-square" /> Edit
-                </button>
-                <button className="btn btn-primary btn-sm" style={{ flex:1, justifyContent:'center' }} onClick={() => setShowReservation(true)}>
-                  <i className="bi bi-calendar-plus" /> Reserve PC
-                </button>
+            </div>
+
+          </div>{/* end sb-inner */}
+        </aside>
+
+        {/* ════════════════
+            MAIN CONTENT
+            ════════════════ */}
+        <main className="student-main">
+          <div className="student-main-inner">
+
+          {/* Welcome */}
+          <div className="student-welcome-strip">
+            <div>
+              <h1>
+                Welcome back, <span style={{ color:'var(--accent)' }}>{user.first_name}</span>
+              </h1>
+              <div className="welcome-sub">
+                {new Date().toLocaleDateString('en-PH', { weekday:'long', year:'numeric', month:'long', day:'numeric' })}
               </div>
             </div>
           </div>
-        </div>
 
-        {/* ── Sit-in History + Reservations (tabbed) ── */}
-        <div style={{ marginTop:'1.5rem' }}>
-          <div style={{ display:'flex', alignItems:'center', gap:'0.75rem', marginBottom:'1rem', flexWrap:'wrap' }}>
-            <button
-              className={`btn btn-sm ${activeTab==='history' ? 'btn-primary' : 'btn-ghost'}`}
-              onClick={() => setActiveTab('history')}
-            >
-              <i className="bi bi-clock-history" /> Sit-in History
-            </button>
-            <button
-              className={`btn btn-sm ${activeTab==='reservations' ? 'btn-primary' : 'btn-ghost'}`}
-              onClick={() => setActiveTab('reservations')}
-            >
-              <i className="bi bi-calendar-check" /> My Reservations
-              {reservations.filter(r => r.status === 'pending').length > 0 && (
-                <span style={{ background:'var(--orange)', color:'#fff', borderRadius:'999px', padding:'0 5px', fontSize:'0.65rem', marginLeft:'2px' }}>
-                  {reservations.filter(r => r.status === 'pending').length}
-                </span>
-              )}
-            </button>
-            <button className="btn btn-ghost btn-sm" style={{ marginLeft:'auto' }} onClick={() => setShowReservation(true)}>
-              <i className="bi bi-calendar-plus" /> New Reservation
-            </button>
+          {/* Banners */}
+          {feedbackBanner && (
+            <div className="feedback-banner">
+              <i className="bi bi-check-circle-fill" /> {feedbackBanner}
+            </div>
+          )}
+          {active.length > 0 && (
+            <div className="active-sitin-banner">
+              <i className="bi bi-circle-fill" style={{ color:'var(--green)', fontSize:'0.5rem' }} />
+              <span>
+                <strong>Currently sitting in:</strong> {active[0].purpose} — Lab {active[0].lab}
+              </span>
+              <span style={{ marginLeft:'auto', fontSize:'0.76rem', color:'var(--fg-dim)' }}>
+                Since {active[0].time_in?.slice(0,16).replace('T',' ')}
+              </span>
+            </div>
+          )}
+
+          {/* Session summary (shown only when there's data) */}
+          {done.length > 0 && (
+            <div className="session-summary-row">
+              <div className="summary-mini">
+                <div className="summary-mini-icon" style={{ background:'rgba(219,188,127,0.12)' }}>
+                  <i className="bi bi-clock" style={{ color:'var(--accent)' }} />
+                </div>
+                <div>
+                  <div className="summary-mini-val">{fmtDuration(totalMinutes)}</div>
+                  <div className="summary-mini-lbl">Total Time</div>
+                </div>
+              </div>
+              <div className="summary-mini">
+                <div className="summary-mini-icon" style={{ background:'rgba(167,192,128,0.12)' }}>
+                  <i className="bi bi-journal-check" style={{ color:'var(--green)' }} />
+                </div>
+                <div>
+                  <div className="summary-mini-val">{done.length}</div>
+                  <div className="summary-mini-lbl">Sessions Done</div>
+                </div>
+              </div>
+              <div className="summary-mini">
+                <div className="summary-mini-icon" style={{ background:'rgba(127,187,179,0.12)' }}>
+                  <i className="bi bi-calculator" style={{ color:'var(--blue)' }} />
+                </div>
+                <div>
+                  <div className="summary-mini-val">{fmtDuration(Math.round(avgMinutes))}</div>
+                  <div className="summary-mini-lbl">Avg Duration</div>
+                </div>
+              </div>
+              <div className="summary-mini">
+                <div className="summary-mini-icon" style={{ background:'rgba(214,153,182,0.12)' }}>
+                  <i className="bi bi-trophy" style={{ color:'var(--purple)' }} />
+                </div>
+                <div>
+                  <div className="summary-mini-val">{fmtDuration(Math.round(longestMin))}</div>
+                  <div className="summary-mini-lbl">Longest Session</div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Announcements (compact scrollable card) */}
+          <div className="ann-card">
+            <div className="ann-card-header">
+              <div className="ann-card-title">
+                <i className="bi bi-megaphone" /> Announcements
+                {announcements.length > 0 && (
+                  <span className="ann-count-badge">{announcements.length}</span>
+                )}
+              </div>
+            </div>
+            {announcements.length === 0 ? (
+              <div className="empty-state" style={{ padding:'1.5rem' }}>
+                <i className="bi bi-inbox" style={{ fontSize:'1.75rem', opacity:0.4 }} />
+                <div className="empty-state-text" style={{ marginTop:'0.4rem', fontSize:'0.83rem' }}>No announcements yet</div>
+              </div>
+            ) : (
+              <div className="ann-scroll-area">
+                {announcements.map((a, i) => (
+                  <div key={a.id} className={`ann-item${i === 0 ? ' ann-item-latest' : ''}`}>
+                    <div className="ann-meta">
+                      <i className="bi bi-person-circle" />
+                      <span>{a.author}</span>
+                      <span className="ann-date">
+                        {a.created_at
+                          ? new Date(a.created_at).toLocaleDateString('en-PH', { year:'numeric', month:'short', day:'numeric' })
+                          : ''}
+                      </span>
+                      {i === 0 && (
+                        <span className="badge badge-orange" style={{ fontSize:'0.6rem' }}>Latest</span>
+                      )}
+                    </div>
+                    <p className="ann-content">{a.content}</p>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
-          {/* ── History Tab ── */}
-          {activeTab === 'history' && (
-            <>
-              {done.length > 0 && (
-                <div style={{
-                  display:'flex', alignItems:'center', gap:'0.5rem',
-                  marginBottom:'0.75rem', fontSize:'0.76rem', color:'var(--fg-dim)',
-                  padding:'0.5rem 0.75rem',
-                  background:'rgba(127,187,179,0.07)', border:'1px solid rgba(127,187,179,0.15)',
-                  borderRadius:'7px', width:'fit-content',
-                }}>
-                  <i className="bi bi-chat-quote" style={{ color:'var(--blue)' }} />
-                  Rate your completed sessions anonymously. Click <strong style={{ color:'var(--fg)' }}>View</strong> to see admin remarks.
+          {/* ── Sit-in History + Reservations ── */}
+          <div className="history-section">
+            <div className="history-tabs-bar">
+              <button
+                className={`tab-btn${activeTab === 'history' ? ' active' : ''}`}
+                onClick={() => setActiveTab('history')}
+              >
+                <i className="bi bi-clock-history" /> Sit-in History
+              </button>
+              <button
+                className={`tab-btn${activeTab === 'reservations' ? ' active' : ''}`}
+                onClick={() => setActiveTab('reservations')}
+              >
+                <i className="bi bi-calendar-check" /> My Reservations
+                {reservations.filter(r => r.status === 'pending').length > 0 && (
+                  <span className="pending-pill">
+                    {reservations.filter(r => r.status === 'pending').length}
+                  </span>
+                )}
+              </button>
+              <button
+                className="btn btn-ghost btn-sm"
+                style={{ marginLeft:'auto' }}
+                onClick={() => setShowReservation(true)}
+              >
+                <i className="bi bi-calendar-plus" /> New Reservation
+              </button>
+            </div>
+
+            {/* History Tab */}
+            {activeTab === 'history' && (
+              <>
+                {done.length > 0 && (
+                  <div className="feedback-info-strip">
+                    <i className="bi bi-chat-quote" style={{ color:'var(--blue)' }} />
+                    Rate your completed sessions anonymously. Click <strong style={{ color:'var(--fg)', margin:'0 2px' }}>View</strong> to see admin remarks.
+                  </div>
+                )}
+                <div className="table-wrap">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>#</th>
+                        <th>Purpose</th>
+                        <th>Lab</th>
+                        <th>Status</th>
+                        <th>Time In</th>
+                        <th>Time Out</th>
+                        <th>Duration</th>
+                        <th>Feedback</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {loading ? (
+                        <tr><td colSpan={8} style={{ textAlign:'center', padding:'2rem', color:'var(--fg-dim)' }}>Loading…</td></tr>
+                      ) : records.length === 0 ? (
+                        <tr><td colSpan={8}>
+                          <div className="empty-state">
+                            <i className="bi bi-journal-x" style={{ fontSize:'2rem', opacity:0.4 }} />
+                            <div className="empty-state-text" style={{ marginTop:'0.5rem' }}>No sit-in history yet</div>
+                          </div>
+                        </td></tr>
+                      ) : records.map(r => {
+                        const submitted = feedbackMap[r.id]
+                        const mood = submitted ? MOODS.find(m => m.value === submitted.rating) : null
+                        const hasRemark = submitted?.admin_reply
+                        const dur = parseDuration(r)
+                        return (
+                          <tr
+                            key={r.id}
+                            ref={el => { if (submitted) rowRefs.current[submitted.id] = el }}
+                            className={submitted && highlightId === submitted.id ? 'highlight-row' : ''}
+                          >
+                            <td style={{ color:'var(--fg-dim)', fontFamily:'monospace', fontSize:'0.8rem' }}>{r.id}</td>
+                            <td><span className="badge badge-orange">{r.purpose}</span></td>
+                            <td style={{ color:'var(--fg-dim)' }}>Lab {r.lab}</td>
+                            <td>
+                              <span className={`badge ${r.status === 'active' ? 'badge-green' : 'badge-blue'}`}>
+                                {r.status === 'active'
+                                  ? <><i className="bi bi-circle-fill" style={{ fontSize:'0.45rem', verticalAlign:'middle', marginRight:'3px' }} />Active</>
+                                  : <><i className="bi bi-check-circle" style={{ fontSize:'0.7rem', verticalAlign:'middle', marginRight:'3px' }} />Done</>
+                                }
+                              </span>
+                            </td>
+                            <td style={{ fontSize:'0.78rem', color:'var(--fg-dim)' }}>{r.time_in?.slice(0,16).replace('T',' ')}</td>
+                            <td style={{ fontSize:'0.78rem', color:'var(--fg-dim)' }}>{r.time_out?.slice(0,16).replace('T',' ')||'—'}</td>
+                            <td style={{ fontSize:'0.78rem', color:'var(--fg-dim)' }}>{r.status === 'done' ? fmtDuration(Math.round(dur)) : '—'}</td>
+                            <td>
+                              {r.status !== 'done' ? (
+                                <span style={{ fontSize:'0.72rem', color:'var(--fg-dim)', opacity:0.45 }}>—</span>
+                              ) : submitted ? (
+                                <button className="btn btn-ghost btn-sm"
+                                  style={{ fontSize:'0.72rem', padding:'0.22rem 0.55rem', gap:'0.35rem', position:'relative' }}
+                                  onClick={() => setViewEntry(submitted)}>
+                                  {mood && <i className={`bi ${mood.icon}`} style={{ color:mood.color, fontSize:'0.85rem' }} />}
+                                  View
+                                  {hasRemark && (
+                                    <span style={{ position:'absolute', top:'-3px', right:'-3px', width:'7px', height:'7px', borderRadius:'50%', background:'var(--accent)', border:'1.5px solid var(--bg)' }} />
+                                  )}
+                                </button>
+                              ) : (
+                                <button className="btn btn-ghost btn-sm"
+                                  style={{ fontSize:'0.72rem', padding:'0.22rem 0.55rem', gap:'0.3rem' }}
+                                  onClick={() => setFeedbackFor(r.id)}>
+                                  <i className="bi bi-chat-quote" /> Rate
+                                </button>
+                              )}
+                            </td>
+                          </tr>
+                        )
+                      })}
+                    </tbody>
+                  </table>
                 </div>
-              )}
+              </>
+            )}
+
+            {/* Reservations Tab */}
+            {activeTab === 'reservations' && (
               <div className="table-wrap">
                 <table>
                   <thead>
-                    <tr><th>#</th><th>Purpose</th><th>Lab</th><th>Status</th><th>Time In</th><th>Time Out</th><th>Duration</th><th>Feedback</th></tr>
+                    <tr>
+                      <th>#</th>
+                      <th>Lab</th>
+                      <th>PC</th>
+                      <th>Purpose</th>
+                      <th>Status</th>
+                      <th>Requested</th>
+                      <th>Resolved</th>
+                      <th>Notes</th>
+                    </tr>
                   </thead>
                   <tbody>
-                    {loading ? (
-                      <tr><td colSpan={8} style={{ textAlign:'center', padding:'2rem', color:'var(--fg-dim)' }}>Loading…</td></tr>
-                    ) : records.length === 0 ? (
+                    {reservations.length === 0 ? (
                       <tr><td colSpan={8}>
                         <div className="empty-state">
-                          <i className="bi bi-journal-x" style={{ fontSize:'2rem', opacity:0.4 }} />
-                          <div className="empty-state-text" style={{ marginTop:'0.5rem' }}>No sit-in history yet</div>
+                          <i className="bi bi-calendar-x" style={{ fontSize:'2rem', opacity:0.4 }} />
+                          <div className="empty-state-text" style={{ marginTop:'0.5rem' }}>No reservations yet</div>
                         </div>
                       </td></tr>
-                    ) : records.map(r => {
-                      const submitted = feedbackMap[r.id]
-                      const mood = submitted ? MOODS.find(m => m.value === submitted.rating) : null
-                      const hasRemark = submitted?.admin_reply
-                      const dur = parseDuration(r)
-                      return (
-                        <tr
-                          key={r.id}
-                          ref={el => { if (submitted) rowRefs.current[submitted.id] = el }}
-                          className={submitted && highlightId === submitted.id ? 'highlight-row' : ''}
-                        >
-                          <td style={{ color:'var(--fg-dim)', fontFamily:'monospace', fontSize:'0.8rem' }}>{r.id}</td>
-                          <td><span className="badge badge-orange">{r.purpose}</span></td>
-                          <td style={{ color:'var(--fg-dim)' }}>Lab {r.lab}</td>
-                          <td>
-                            <span className={`badge ${r.status==='active'?'badge-green':'badge-blue'}`}>
-                              {r.status === 'active'
-                                ? <><i className="bi bi-circle-fill" style={{ fontSize:'0.45rem', verticalAlign:'middle', marginRight:'3px' }} />Active</>
-                                : <><i className="bi bi-check-circle" style={{ fontSize:'0.7rem', verticalAlign:'middle', marginRight:'3px' }} />Done</>
-                              }
-                            </span>
-                          </td>
-                          <td style={{ fontSize:'0.78rem', color:'var(--fg-dim)' }}>{r.time_in?.slice(0,16).replace('T',' ')}</td>
-                          <td style={{ fontSize:'0.78rem', color:'var(--fg-dim)' }}>{r.time_out?.slice(0,16).replace('T',' ')||'—'}</td>
-                          <td style={{ fontSize:'0.78rem', color:'var(--fg-dim)' }}>{r.status==='done' ? fmtDuration(Math.round(dur)) : '—'}</td>
-                          <td>
-                            {r.status !== 'done' ? (
-                              <span style={{ fontSize:'0.72rem', color:'var(--fg-dim)', opacity:0.45 }}>—</span>
-                            ) : submitted ? (
-                              <button className="btn btn-ghost btn-sm"
-                                style={{ fontSize:'0.72rem', padding:'0.22rem 0.55rem', gap:'0.35rem', position:'relative' }}
-                                onClick={() => setViewEntry(submitted)}>
-                                {mood && <i className={`bi ${mood.icon}`} style={{ color:mood.color, fontSize:'0.85rem' }} />}
-                                View
-                                {hasRemark && (
-                                  <span style={{ position:'absolute', top:'-3px', right:'-3px', width:'7px', height:'7px', borderRadius:'50%', background:'var(--accent)', border:'1.5px solid var(--bg)' }} />
-                                )}
-                              </button>
-                            ) : (
-                              <button className="btn btn-ghost btn-sm"
-                                style={{ fontSize:'0.72rem', padding:'0.22rem 0.55rem', gap:'0.3rem' }}
-                                onClick={() => setFeedbackFor(r.id)}>
-                                <i className="bi bi-chat-quote" /> Rate
-                              </button>
-                            )}
-                          </td>
-                        </tr>
-                      )
-                    })}
+                    ) : reservations.map(r => (
+                      <tr key={r.id}>
+                        <td style={{ color:'var(--fg-dim)', fontFamily:'monospace', fontSize:'0.8rem' }}>{r.id}</td>
+                        <td style={{ color:'var(--fg-dim)' }}>Lab {r.lab}</td>
+                        <td><span style={{ fontFamily:'monospace', color:'var(--blue)' }}>PC {r.pc_number}</span></td>
+                        <td><span className="badge badge-orange">{r.purpose}</span></td>
+                        <td>
+                          <span className={`badge ${r.status==='approved'?'badge-green':r.status==='denied'?'badge-red':'badge-orange'}`}>
+                            {r.status === 'pending'
+                              ? <><i className="bi bi-hourglass-split" style={{ fontSize:'0.7rem' }} /> Pending</>
+                              : r.status === 'approved'
+                              ? <><i className="bi bi-check-circle" style={{ fontSize:'0.7rem' }} /> Approved</>
+                              : <><i className="bi bi-x-circle" style={{ fontSize:'0.7rem' }} /> Denied</>}
+                          </span>
+                        </td>
+                        <td style={{ fontSize:'0.78rem', color:'var(--fg-dim)' }}>{r.requested_at?.slice(0,16).replace('T',' ')}</td>
+                        <td style={{ fontSize:'0.78rem', color:'var(--fg-dim)' }}>{r.resolved_at?.slice(0,16).replace('T',' ')||'—'}</td>
+                        <td style={{ fontSize:'0.78rem', color:'var(--fg-dim)', maxWidth:'160px', overflow:'hidden', textOverflow:'ellipsis' }}>{r.notes||'—'}</td>
+                      </tr>
+                    ))}
                   </tbody>
                 </table>
               </div>
-            </>
-          )}
+            )}
+          </div>
 
-          {/* ── Reservations Tab ── */}
-          {activeTab === 'reservations' && (
-            <div className="table-wrap">
-              <table>
-                <thead>
-                  <tr><th>#</th><th>Lab</th><th>PC</th><th>Purpose</th><th>Status</th><th>Requested</th><th>Resolved</th><th>Notes</th></tr>
-                </thead>
-                <tbody>
-                  {reservations.length === 0 ? (
-                    <tr><td colSpan={8}>
-                      <div className="empty-state">
-                        <i className="bi bi-calendar-x" style={{ fontSize:'2rem', opacity:0.4 }} />
-                        <div className="empty-state-text" style={{ marginTop:'0.5rem' }}>No reservations yet</div>
-                      </div>
-                    </td></tr>
-                  ) : reservations.map(r => (
-                    <tr key={r.id}>
-                      <td style={{ color:'var(--fg-dim)', fontFamily:'monospace', fontSize:'0.8rem' }}>{r.id}</td>
-                      <td style={{ color:'var(--fg-dim)' }}>Lab {r.lab}</td>
-                      <td><span style={{ fontFamily:'monospace', color:'var(--blue)' }}>PC {r.pc_number}</span></td>
-                      <td><span className="badge badge-orange">{r.purpose}</span></td>
-                      <td>
-                        <span className={`badge ${r.status==='approved'?'badge-green':r.status==='denied'?'badge-red':'badge-orange'}`}>
-                          {r.status === 'pending' ? <><i className="bi bi-hourglass-split" style={{ fontSize:'0.7rem' }} /> Pending</> :
-                           r.status === 'approved' ? <><i className="bi bi-check-circle" style={{ fontSize:'0.7rem' }} /> Approved</> :
-                           <><i className="bi bi-x-circle" style={{ fontSize:'0.7rem' }} /> Denied</>}
-                        </span>
-                      </td>
-                      <td style={{ fontSize:'0.78rem', color:'var(--fg-dim)' }}>{r.requested_at?.slice(0,16).replace('T',' ')}</td>
-                      <td style={{ fontSize:'0.78rem', color:'var(--fg-dim)' }}>{r.resolved_at?.slice(0,16).replace('T',' ')||'—'}</td>
-                      <td style={{ fontSize:'0.78rem', color:'var(--fg-dim)', maxWidth:'160px', overflow:'hidden', textOverflow:'ellipsis' }}>{r.notes||'—'}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
+          </div>{/* /student-main-inner */}
+        </main>
       </div>
     </div>
   )

@@ -3,7 +3,7 @@ use rocket::{
     request::{FromRequest, Outcome, Request},
     serde::json::Json,
 };
-use rocket_db_pools::Connection;
+use rocket::State;
 use jsonwebtoken::{encode, Header as JwtHeader, EncodingKey};
 use crate::{db::Db, models::*};
 
@@ -70,7 +70,7 @@ pub fn require_admin(token: &str) -> Result<Claims, (Status, Json<ApiError>)> {
 
 #[post("/login", data = "<req>")]
 pub async fn login(
-    mut db: Connection<Db>,
+    db: &State<Db>,
     req: Json<LoginRequest>,
 ) -> Result<Json<AuthResponse>, (Status, Json<ApiError>)> {
 
@@ -78,7 +78,7 @@ pub async fn login(
         "SELECT * FROM users WHERE id_number = ?",
     )
     .bind(&req.id_number)
-    .fetch_optional(&mut **db)
+    .fetch_optional(db.inner())
     .await
     .map_err(|e| {
         // Detailed error so user/dev can diagnose MySQL issues
@@ -115,7 +115,7 @@ pub async fn login(
 
 #[post("/register", data = "<req>")]
 pub async fn register(
-    mut db: Connection<Db>,
+    db: &State<Db>,
     req: Json<RegisterRequest>,
 ) -> Result<Json<AuthResponse>, (Status, Json<ApiError>)> {
 
@@ -123,7 +123,7 @@ pub async fn register(
         "SELECT COUNT(*) FROM users WHERE id_number = ?",
     )
     .bind(&req.id_number)
-    .fetch_one(&mut **db)
+    .fetch_one(db.inner())
     .await
     .map_err(|e| {
         eprintln!("REGISTER DB ERROR: {}", e);
@@ -152,7 +152,7 @@ pub async fn register(
     .bind(req.email.as_deref().unwrap_or(""))
     .bind(req.course.as_deref().unwrap_or("BSIT"))
     .bind(req.address.as_deref().unwrap_or(""))
-    .execute(&mut **db)
+    .execute(db.inner())
     .await
     .map_err(|e| {
         eprintln!("REGISTER INSERT ERROR: {}", e);
@@ -161,7 +161,7 @@ pub async fn register(
 
     let user: User = sqlx::query_as("SELECT * FROM users WHERE id_number = ?")
         .bind(&req.id_number)
-        .fetch_one(&mut **db)
+        .fetch_one(db.inner())
         .await
         .map_err(|_| (Status::InternalServerError, Json(ApiError { error: "Failed to fetch new user".into() })))?;
 

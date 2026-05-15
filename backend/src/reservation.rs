@@ -1,5 +1,4 @@
-use rocket::{http::Status, serde::json::Json};
-use rocket_db_pools::Connection;
+use rocket::{http::Status, serde::json::Json, State};
 use serde::{Deserialize, Serialize};
 use crate::{
     auth::{BearerToken, require_admin, verify_token},
@@ -76,7 +75,7 @@ fn valid_time_slot(slot: &str) -> bool {
 
 #[post("/request", data = "<req>")]
 pub async fn submit_reservation(
-    mut db: Connection<Db>,
+    db: &State<Db>,
     req: Json<ReservationRequest>,
     token: BearerToken,
 ) -> Result<Json<ApiSuccess>, (Status, Json<ApiError>)> {
@@ -93,7 +92,7 @@ pub async fn submit_reservation(
     // Validate date — must not be in the past
     // We compare as strings (YYYY-MM-DD format sorts lexicographically)
     let today: (String,) = sqlx::query_as("SELECT DATE_FORMAT(CURDATE(), '%Y-%m-%d')")
-        .fetch_one(&mut **db).await
+        .fetch_one(db.inner()).await
         .map_err(|_| (Status::InternalServerError, Json(ApiError { error: "DB error".into() })))?;
 
     if req.reservation_date.as_str() < today.0.as_str() {
@@ -105,7 +104,7 @@ pub async fn submit_reservation(
     // Fetch student name
     let student: Option<(String, String)> = sqlx::query_as(
         "SELECT first_name, last_name FROM users WHERE id_number = ?"
-    ).bind(&claims.sub).fetch_optional(&mut **db).await
+    ).bind(&claims.sub).fetch_optional(db.inner()).await
     .map_err(|_| (Status::InternalServerError, Json(ApiError { error: "DB error".into() })))?;
 
     let (first, last) = student.ok_or((
@@ -119,7 +118,7 @@ pub async fn submit_reservation(
          WHERE student_id = ? AND status = 'pending'
          AND reservation_date = ? AND time_slot = ?"
     ).bind(&claims.sub).bind(&req.reservation_date).bind(&req.time_slot)
-     .fetch_one(&mut **db).await.unwrap_or((0,));
+     .fetch_one(db.inner()).await.unwrap_or((0,));
 
     if already_pending.0 > 0 {
         return Err((Status::Conflict, Json(ApiError {
@@ -136,7 +135,7 @@ pub async fn submit_reservation(
          WHERE student_id = ? AND status = 'approved'
          AND reservation_date = ? AND time_slot = ?"
     ).bind(&claims.sub).bind(&req.reservation_date).bind(&req.time_slot)
-     .fetch_one(&mut **db).await.unwrap_or((0,));
+     .fetch_one(db.inner()).await.unwrap_or((0,));
 
     if self_conflict.0 > 0 {
         return Err((Status::Conflict, Json(ApiError {
@@ -154,7 +153,7 @@ pub async fn submit_reservation(
          AND reservation_date = ? AND time_slot = ?"
     ).bind(&req.lab).bind(req.pc_number)
      .bind(&req.reservation_date).bind(&req.time_slot)
-     .fetch_one(&mut **db).await.unwrap_or((0,));
+     .fetch_one(db.inner()).await.unwrap_or((0,));
 
     if pc_conflict.0 > 0 {
         return Err((Status::Conflict, Json(ApiError {
@@ -178,7 +177,7 @@ pub async fn submit_reservation(
      .bind(&req.reservation_date)
      .bind(&req.time_slot)
      .bind(&req.notes)
-     .execute(&mut **db).await
+     .execute(db.inner()).await
     .map_err(|e| {
         eprintln!("RESERVATION INSERT ERROR: {}", e);
         (Status::InternalServerError, Json(ApiError { error: "Failed to submit reservation".into() }))
@@ -192,7 +191,7 @@ pub async fn submit_reservation(
     sqlx::query(
         "INSERT INTO notifications (user_id, message, notif_type, link)
          SELECT id_number, ?, 'reservation', '/admin/reservations' FROM users WHERE role = 'admin'"
-    ).bind(msg).execute(&mut **db).await.ok();
+    ).bind(msg).execute(db.inner()).await.ok();
 
     Ok(Json(ApiSuccess { message: "Reservation request submitted successfully.".into() }))
 }
@@ -201,7 +200,7 @@ pub async fn submit_reservation(
 
 #[get("/my")]
 pub async fn my_reservations(
-    mut db: Connection<Db>,
+    db: &State<Db>,
     token: BearerToken,
 ) -> Result<Json<Vec<Reservation>>, (Status, Json<ApiError>)> {
     let claims = verify_token(&token.0)
@@ -215,7 +214,7 @@ pub async fn my_reservations(
                 DATE_FORMAT(resolved_at,  '%Y-%m-%dT%H:%i:%S') AS resolved_at,
                 resolved_by
          FROM reservations WHERE student_id = ? ORDER BY reservation_date DESC, time_slot ASC"
-    ).bind(&claims.sub).fetch_all(&mut **db).await
+    ).bind(&claims.sub).fetch_all(db.inner()).await
     .map_err(|_| (Status::InternalServerError, Json(ApiError { error: "DB error".into() })))?;
 
     Ok(Json(rows))
@@ -225,7 +224,7 @@ pub async fn my_reservations(
 
 #[get("/all?<status>")]
 pub async fn all_reservations(
-    mut db: Connection<Db>,
+    db: &State<Db>,
     token: BearerToken,
     status: Option<String>,
 ) -> Result<Json<Vec<Reservation>>, (Status, Json<ApiError>)> {
@@ -240,7 +239,7 @@ pub async fn all_reservations(
                     DATE_FORMAT(resolved_at,  '%Y-%m-%dT%H:%i:%S') AS resolved_at,
                     resolved_by
              FROM reservations WHERE status = ? ORDER BY reservation_date ASC, time_slot ASC"
-        ).bind(s).fetch_all(&mut **db).await
+        ).bind(s).fetch_all(db.inner()).await
     } else {
         sqlx::query_as(
             "SELECT id, student_id, student_name, lab, pc_number, purpose,
@@ -250,7 +249,7 @@ pub async fn all_reservations(
                     DATE_FORMAT(resolved_at,  '%Y-%m-%dT%H:%i:%S') AS resolved_at,
                     resolved_by
              FROM reservations ORDER BY reservation_date ASC, time_slot ASC, requested_at DESC"
-        ).fetch_all(&mut **db).await
+        ).fetch_all(db.inner()).await
     }.map_err(|_| (Status::InternalServerError, Json(ApiError { error: "DB error".into() })))?;
 
     Ok(Json(rows))
@@ -260,7 +259,7 @@ pub async fn all_reservations(
 
 #[post("/approve/<id>", data = "<req>")]
 pub async fn approve_reservation(
-    mut db: Connection<Db>,
+    db: &State<Db>,
     id: i64,
     req: Json<ResolveRequest>,
     token: BearerToken,
@@ -276,7 +275,7 @@ pub async fn approve_reservation(
           AND r2.reservation_date = r1.reservation_date AND r2.time_slot = r1.time_slot
           AND r2.status = 'approved' AND r2.id != r1.id
          WHERE r1.id = ?"
-    ).bind(id).fetch_optional(&mut **db).await.unwrap_or(None);
+    ).bind(id).fetch_optional(db.inner()).await.unwrap_or(None);
 
     if let Some((cid, lab, pc, date, slot)) = conflict {
         return Err((Status::Conflict, Json(ApiError {
@@ -293,20 +292,20 @@ pub async fn approve_reservation(
              notes = COALESCE(?, notes)
          WHERE id = ? AND status = 'pending'"
     ).bind(&claims.name).bind(&req.notes).bind(id)
-     .execute(&mut **db).await
+     .execute(db.inner()).await
     .map_err(|_| (Status::InternalServerError, Json(ApiError { error: "Update failed".into() })))?;
 
     // Notify student
     let res: Option<(String, String, i32, String, String)> = sqlx::query_as(
         "SELECT student_id, lab, pc_number, reservation_date, time_slot FROM reservations WHERE id = ?"
-    ).bind(id).fetch_optional(&mut **db).await.unwrap_or(None);
+    ).bind(id).fetch_optional(db.inner()).await.unwrap_or(None);
 
     if let Some((sid, lab, pc, date, slot)) = res {
         sqlx::query(
             "INSERT INTO notifications (user_id, message, notif_type, link) VALUES (?, ?, 'reservation', '/student')"
         ).bind(&sid)
          .bind(format!("✅ Your reservation for Lab {} PC {} on {} at {} has been approved!", lab, pc, date, slot))
-         .execute(&mut **db).await.ok();
+         .execute(db.inner()).await.ok();
     }
 
     Ok(Json(ApiSuccess { message: "Reservation approved.".into() }))
@@ -316,7 +315,7 @@ pub async fn approve_reservation(
 
 #[post("/deny/<id>", data = "<req>")]
 pub async fn deny_reservation(
-    mut db: Connection<Db>,
+    db: &State<Db>,
     id: i64,
     req: Json<ResolveRequest>,
     token: BearerToken,
@@ -329,19 +328,19 @@ pub async fn deny_reservation(
              notes = COALESCE(?, notes)
          WHERE id = ? AND status = 'pending'"
     ).bind(&claims.name).bind(&req.notes).bind(id)
-     .execute(&mut **db).await
+     .execute(db.inner()).await
     .map_err(|_| (Status::InternalServerError, Json(ApiError { error: "Update failed".into() })))?;
 
     let res: Option<(String, String, i32, String, String)> = sqlx::query_as(
         "SELECT student_id, lab, pc_number, reservation_date, time_slot FROM reservations WHERE id = ?"
-    ).bind(id).fetch_optional(&mut **db).await.unwrap_or(None);
+    ).bind(id).fetch_optional(db.inner()).await.unwrap_or(None);
 
     if let Some((sid, lab, pc, date, slot)) = res {
         sqlx::query(
             "INSERT INTO notifications (user_id, message, notif_type, link) VALUES (?, ?, 'reservation', '/student')"
         ).bind(&sid)
          .bind(format!("❌ Your reservation for Lab {} PC {} on {} at {} was denied.", lab, pc, date, slot))
-         .execute(&mut **db).await.ok();
+         .execute(db.inner()).await.ok();
     }
 
     Ok(Json(ApiSuccess { message: "Reservation denied.".into() }))
@@ -351,14 +350,14 @@ pub async fn deny_reservation(
 
 #[get("/pc-status/<lab>")]
 pub async fn pc_status(
-    mut db: Connection<Db>,
+    db: &State<Db>,
     lab: &str,
     token: BearerToken,
 ) -> Result<Json<Vec<PcStatus>>, (Status, Json<ApiError>)> {
     require_admin(&token.0)?;
     let rows: Vec<PcStatus> = sqlx::query_as(
         "SELECT lab, pc_number, is_disabled FROM pc_status WHERE lab = ? ORDER BY pc_number ASC"
-    ).bind(lab).fetch_all(&mut **db).await
+    ).bind(lab).fetch_all(db.inner()).await
     .map_err(|_| (Status::InternalServerError, Json(ApiError { error: "DB error".into() })))?;
     Ok(Json(rows))
 }
@@ -366,7 +365,7 @@ pub async fn pc_status(
 /// Toggle a PC's disabled state (admin marks a PC as broken/offline).
 #[post("/pc-control", data = "<req>")]
 pub async fn pc_control(
-    mut db: Connection<Db>,
+    db: &State<Db>,
     req: Json<PcToggleRequest>,
     token: BearerToken,
 ) -> Result<Json<ApiSuccess>, (Status, Json<ApiError>)> {
@@ -375,7 +374,7 @@ pub async fn pc_control(
         "INSERT INTO pc_status (lab, pc_number, is_disabled) VALUES (?, ?, ?)
          ON DUPLICATE KEY UPDATE is_disabled = VALUES(is_disabled)"
     ).bind(&req.lab).bind(req.pc_number).bind(req.disabled)
-     .execute(&mut **db).await
+     .execute(db.inner()).await
     .map_err(|_| (Status::InternalServerError, Json(ApiError { error: "Update failed".into() })))?;
     Ok(Json(ApiSuccess { message: "PC status updated.".into() }))
 }
@@ -384,7 +383,7 @@ pub async fn pc_control(
 
 #[get("/lab-occupancy/<lab>?<date>&<slot>")]
 pub async fn lab_occupancy(
-    mut db: Connection<Db>,
+    db: &State<Db>,
     lab: &str,
     date: Option<String>,
     slot: Option<String>,
@@ -399,20 +398,20 @@ pub async fn lab_occupancy(
             "SELECT pc_number FROM reservations
              WHERE lab = ? AND status = 'approved'
              AND reservation_date = ? AND time_slot = ?"
-        ).bind(lab).bind(d).bind(s).fetch_all(&mut **db).await.unwrap_or_default()
+        ).bind(lab).bind(d).bind(s).fetch_all(db.inner()).await.unwrap_or_default()
     } else {
         // Fallback: today, any slot
         sqlx::query_as(
             "SELECT pc_number FROM reservations
              WHERE lab = ? AND status = 'approved'
              AND reservation_date = CURDATE()"
-        ).bind(lab).fetch_all(&mut **db).await.unwrap_or_default()
+        ).bind(lab).fetch_all(db.inner()).await.unwrap_or_default()
     };
 
     // Disabled PCs (offline)
     let disabled: Vec<(i32,)> = sqlx::query_as(
         "SELECT pc_number FROM pc_status WHERE lab = ? AND is_disabled = 1"
-    ).bind(lab).fetch_all(&mut **db).await.unwrap_or_default();
+    ).bind(lab).fetch_all(db.inner()).await.unwrap_or_default();
 
     Ok(Json(serde_json::json!({
         "reserved": reserved.iter().map(|r| r.0).collect::<Vec<_>>(),
