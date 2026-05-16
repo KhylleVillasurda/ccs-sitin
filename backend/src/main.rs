@@ -6,6 +6,7 @@ use sqlx::mysql::MySqlPoolOptions;
 use std::time::Duration;
 
 mod db;
+mod seeders;
 mod models;
 mod auth;
 mod students;
@@ -49,6 +50,7 @@ async fn rocket() -> _ {
         .manage(pool) // Manage the MySqlPool instance
         .attach(cors::Cors)
         .attach(db::DbInitFairing)
+        .attach(seeders::SeederFairing)
         .mount("/", routes![all_options])
         .mount("/api/auth", routes![
             auth::login,

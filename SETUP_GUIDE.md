@@ -84,7 +84,28 @@ url = "mysql://root:YOUR_PASSWORD@localhost:3306/ccs_sitin"
 
 ---
 
-## Step 4 — Run the Backend
+## Step 4b — (Optional) Enable Character Data Seeding
+
+If you would like to automatically populate the database with a set of sample student characters (Emilia, Patton, Son Goku, etc.), you can enable the internal seeder:
+
+1. In your backend terminal, set the `SEED_DATABASE` environment variable to `true` before running:
+
+   **Linux/macOS:**
+   ```bash
+   SEED_DATABASE=true cargo run
+   ```
+
+   **Windows (PowerShell):**
+   ```powershell
+   $env:SEED_DATABASE="true"; cargo run
+   ```
+
+The application will check this variable on startup and populate the `users` table if enabled.
+
+---
+
+## Step 5 — Run the Backend
+
 
 Open a terminal in the project root:
 
