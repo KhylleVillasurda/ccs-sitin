@@ -128,7 +128,7 @@ export default function AdminRecords() {
 
       <div style={{ display:'flex', gap:'0.75rem', marginBottom:'1.25rem', alignItems:'center', flexWrap:'wrap' }}>
         <div className="search-bar" style={{ maxWidth:'280px' }}>
-          <span style={{ color:'var(--fg-dim)', fontSize:'0.9rem' }}>🔍</span>
+          <span style={{ color:'var(--fg-dim)', fontSize:'0.9rem' }}><i className="bi bi-search" /></span>
           <input value={searchInput} onChange={e => setSearchInput(e.target.value)} placeholder="Search records…"/>
         </div>
         <div style={{ display:'flex', gap:'0.4rem' }}>
@@ -149,7 +149,7 @@ export default function AdminRecords() {
             {loading
               ? <tr><td colSpan={9} style={{ textAlign:'center', padding:'2rem', color:'var(--fg-dim)' }}>Loading…</td></tr>
               : filtered.length===0
-                ? <tr><td colSpan={9}><div className="empty-state"><div className="empty-state-icon">📋</div><div className="empty-state-text">No records found</div></div></td></tr>
+                ? <tr><td colSpan={9}><div className="empty-state"><div className="empty-state-icon"><i className="bi bi-clipboard" /></div><div className="empty-state-text">No records found</div></div></td></tr>
                 : filtered.map(r => (
                   <tr key={r.id}>
                     <td style={{ color:'var(--fg-dim)', fontFamily:'monospace', fontSize:'0.8rem' }}>{r.id}</td>

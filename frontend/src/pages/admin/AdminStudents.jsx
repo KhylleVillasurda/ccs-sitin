@@ -169,7 +169,7 @@ export default function AdminStudents() {
       <div className="card">
         <div style={{ marginBottom:'1rem' }}>
           <div className="search-bar" style={{ maxWidth:'320px' }}>
-            <span style={{ color:'var(--fg-dim)', fontSize:'0.9rem' }}>🔍</span>
+            <span style={{ color:'var(--fg-dim)', fontSize:'0.9rem' }}><i className="bi bi-search" /></span>
             <input value={searchInput} onChange={e=>setSearchInput(e.target.value)} placeholder="Search by name, ID, course…"/>
           </div>
         </div>
@@ -184,7 +184,7 @@ export default function AdminStudents() {
               {loading
                 ? <tr><td colSpan={6} style={{ textAlign:'center', padding:'2rem', color:'var(--fg-dim)' }}>Loading…</td></tr>
                 : filtered.length===0
-                  ? <tr><td colSpan={6}><div className="empty-state"><div className="empty-state-icon">👥</div><div className="empty-state-text">{search?'No students match':'No students registered yet'}</div></div></td></tr>
+                  ? <tr><td colSpan={6}><div className="empty-state"><div className="empty-state-icon"><i className="bi bi-people" /></div><div className="empty-state-text">{search?'No students match':'No students registered yet'}</div></div></td></tr>
                   : filtered.map(s=>(
                     <tr key={s.id_number}>
                       <td><span style={{ color:'var(--blue)', fontFamily:'monospace', fontSize:'0.85rem' }}>{s.id_number}</span></td>
