@@ -72,6 +72,7 @@ pub struct SitInRecord {
     pub student_name: String,
     pub purpose:      String,
     pub lab:          String,
+    pub pc_number:    i32,
     pub session:      Option<i32>,
     pub status:       String,
     #[serde(serialize_with = "fmt_dt")]
@@ -128,6 +129,7 @@ pub struct SitInRequest {
     pub student_id: String,
     pub purpose:    String,
     pub lab:        String,
+    pub pc_number:  i32,
 }
 
 #[derive(Debug, Serialize, Deserialize)]

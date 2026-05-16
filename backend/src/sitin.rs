@@ -41,10 +41,10 @@ pub async fn start_sitin(
     let student_name = format!("{} {}", student.first_name, student.last_name);
 
     sqlx::query(
-        "INSERT INTO sit_in_records (student_id, student_name, purpose, lab, session)
-         VALUES (?, ?, ?, ?, ?)"
+        "INSERT INTO sit_in_records (student_id, student_name, purpose, lab, pc_number, session)
+         VALUES (?, ?, ?, ?, ?, ?)"
     ).bind(&req.student_id).bind(&student_name).bind(&req.purpose)
-     .bind(&req.lab).bind(student.remaining_sessions)
+     .bind(&req.lab).bind(req.pc_number).bind(student.remaining_sessions)
      .execute(db.inner()).await
     .map_err(|e| {
         eprintln!("SITIN INSERT ERROR: {}", e);
