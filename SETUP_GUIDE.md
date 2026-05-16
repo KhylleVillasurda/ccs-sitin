@@ -46,6 +46,13 @@ Both should show green status. MySQL must be running before you start the backen
 4. Scroll down and click **Go**
 5. You should see: `Setup complete!`
 
+#### Updating for PC Number Feature
+If you already have the database installed, run the following SQL command in the **SQL** tab of your `ccs_sitin` database in phpMyAdmin:
+
+```sql
+ALTER TABLE sitin ADD COLUMN IF NOT EXISTS pc_number INT DEFAULT 0;
+```
+
 This creates the `ccs_sitin` database and the necessary tables (users, sit_in_records, etc.).
 
 ### Option B — MySQL Console
