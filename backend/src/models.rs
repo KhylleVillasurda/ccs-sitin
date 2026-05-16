@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use chrono::NaiveDateTime;
 
-fn fmt_dt<S>(dt: &Option<NaiveDateTime>, s: S) -> Result<S::Ok, S::Error>
+pub fn fmt_dt<S>(dt: &Option<NaiveDateTime>, s: S) -> Result<S::Ok, S::Error>
 where S: serde::Serializer {
     match dt {
         Some(d) => s.serialize_some(&d.format("%Y-%m-%dT%H:%M:%S").to_string()),
@@ -174,17 +174,18 @@ pub struct ApiSuccess { pub message: String }
 /// What admin sees — no student identity
 #[derive(Debug, Serialize, Deserialize, sqlx::FromRow)]
 pub struct FeedbackView {
-    pub id:          i64,
-    pub sitin_id:    i64,
-    pub purpose:     String,
-    pub lab:         String,
-    pub content:     String,
-    pub rating:      Option<i32>,
-    pub admin_reply: Option<String>,
+    pub id:             i64,
+    pub sitin_id:       i64,
+    pub purpose:        String,
+    pub lab:            String,
+    pub content:        String,
+    pub rating:         Option<i32>,
+    pub admin_reply:    Option<String>,
+    pub is_testimonial: bool,
     #[serde(serialize_with = "fmt_dt")]
-    pub created_at:  Option<NaiveDateTime>,
+    pub created_at:     Option<NaiveDateTime>,
     #[serde(serialize_with = "fmt_dt")]
-    pub replied_at:  Option<NaiveDateTime>,
+    pub replied_at:     Option<NaiveDateTime>,
 }
 
 /// What student sees — their own submissions + admin reply
@@ -194,6 +195,7 @@ pub struct MyFeedbackEntry {
     pub sitin_id:    i64,
     pub purpose:     String,
     pub lab:         String,
+    pub pc_number:   i32,
     pub content:     String,
     pub rating:      Option<i32>,
     pub admin_reply: Option<String>,
@@ -201,6 +203,16 @@ pub struct MyFeedbackEntry {
     pub created_at:  Option<NaiveDateTime>,
     #[serde(serialize_with = "fmt_dt")]
     pub replied_at:  Option<NaiveDateTime>,
+}
+
+#[derive(Debug, Serialize, Deserialize, sqlx::FromRow)]
+pub struct TestimonialView {
+    pub id:           i64,
+    pub content:      String,
+    pub rating:       Option<i32>,
+    pub student_name: String,
+    #[serde(serialize_with = "fmt_dt")]
+    pub created_at:   Option<NaiveDateTime>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]

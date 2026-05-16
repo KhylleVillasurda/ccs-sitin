@@ -817,6 +817,7 @@ export default function StudentDashboard() {
                         <th>#</th>
                         <th>Purpose</th>
                         <th>Lab</th>
+                        <th>PC No</th>
                         <th>Status</th>
                         <th>Time In</th>
                         <th>Time Out</th>
@@ -826,9 +827,9 @@ export default function StudentDashboard() {
                     </thead>
                     <tbody>
                       {loading ? (
-                        <tr><td colSpan={8} style={{ textAlign:'center', padding:'2rem', color:'var(--fg-dim)' }}>Loading…</td></tr>
+                        <tr><td colSpan={9} style={{ textAlign:'center', padding:'2rem', color:'var(--fg-dim)' }}>Loading…</td></tr>
                       ) : records.length === 0 ? (
-                        <tr><td colSpan={8}>
+                        <tr><td colSpan={9}>
                           <div className="empty-state">
                             <i className="bi bi-journal-x" style={{ fontSize:'2rem', opacity:0.4 }} />
                             <div className="empty-state-text" style={{ marginTop:'0.5rem' }}>No sit-in history yet</div>
@@ -848,6 +849,7 @@ export default function StudentDashboard() {
                             <td style={{ color:'var(--fg-dim)', fontFamily:'monospace', fontSize:'0.8rem' }}>{r.id}</td>
                             <td><span className="badge badge-orange">{r.purpose}</span></td>
                             <td style={{ color:'var(--fg-dim)' }}>Lab {r.lab}</td>
+                            <td style={{ fontFamily:'monospace', color:'var(--blue)' }}>PC {r.pc_number}</td>
                             <td>
                               <span className={`badge ${r.status === 'active' ? 'badge-green' : 'badge-blue'}`}>
                                 {r.status === 'active'

@@ -90,6 +90,8 @@ async fn rocket() -> _ {
             feedback::reply,
             feedback::my_feedbacks,
             feedback::my_feedbacks_full,
+            feedback::toggle_testimonial,
+            feedback::list_testimonials,
         ])
         .mount("/api/notifications", routes![
             notifications::list,
@@ -99,6 +101,7 @@ async fn rocket() -> _ {
         ])
         .mount("/api/reservations", routes![
             reservation::submit_reservation,
+            reservation::cancel_reservation,
             reservation::my_reservations,
             reservation::all_reservations,
             reservation::approve_reservation,

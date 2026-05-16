@@ -19,6 +19,8 @@ export default function Landing() {
   const { theme, toggle } = useTheme()
   const [leaderboard, setLeaderboard] = useState([])
   const [lbLoading, setLbLoading] = useState(true)
+  const [testimonials, setTestimonials] = useState([])
+  const [testLoading, setTestLoading] = useState(true)
 
   // avatars map: id_number -> { loading, url }
   const [avatars, setAvatars] = useState({})
@@ -44,6 +46,11 @@ export default function Landing() {
       })
       .catch(() => {})
       .finally(() => setLbLoading(false))
+
+    api.get('/feedback/testimonials')
+      .then(r => setTestimonials(r.data))
+      .catch(() => {})
+      .finally(() => setTestLoading(false))
   }, [])
 
   return (
@@ -304,6 +311,41 @@ export default function Landing() {
           </div>
         </div>
       </section>
+
+      {/* Testimonials */}
+      {!testLoading && testimonials.length > 0 && (
+        <section className="testimonials-section">
+          <div className="testimonials-inner">
+            <div className="testimonials-header">
+              <h2>What our students say</h2>
+              <p>Real feedback from the CCS community</p>
+            </div>
+            <div className="testimonials-grid">
+              {testimonials.map((t, i) => (
+                <div key={t.id} className="testimonial-card">
+                  <div className="testimonial-stars">
+                    {[...Array(t.rating || 5)].map((_, i) => (
+                      <i key={i} className="bi bi-star-fill" />
+                    ))}
+                  </div>
+                  <p className="testimonial-content">"{t.content}"</p>
+                  <div className="testimonial-footer">
+                    <div className="testimonial-avatar">
+                      <i className="bi bi-person-circle" />
+                    </div>
+                    <div className="testimonial-info">
+                      <div className="testimonial-name">{t.student_name}</div>
+                      <div className="testimonial-date">
+                        {new Date(t.created_at).toLocaleDateString('en-PH', { month:'short', day:'numeric', year:'numeric' })}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* CTA */}
       <section className="cta-section">

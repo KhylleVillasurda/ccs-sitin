@@ -95,7 +95,7 @@ pub async fn list(
 
     let feedbacks: Vec<FeedbackView> = sqlx::query_as(
         "SELECT f.id, f.sitin_id, s.purpose, s.lab,
-                f.content, f.rating, f.admin_reply, f.created_at, f.replied_at
+                f.content, f.rating, f.admin_reply, f.is_testimonial, f.created_at, f.replied_at
          FROM feedbacks f
          JOIN sit_in_records s ON s.id = f.sitin_id
          ORDER BY f.created_at DESC"
@@ -108,6 +108,48 @@ pub async fn list(
     })?;
 
     Ok(Json(feedbacks))
+}
+
+/// Admin: toggle testimonial status of a feedback
+#[post("/<id>/testimonial")]
+pub async fn toggle_testimonial(
+    db: &State<Db>,
+    id: i64,
+    token: crate::auth::BearerToken,
+) -> Result<Json<ApiSuccess>, (Status, Json<ApiError>)> {
+    require_admin(&token.0)?;
+
+    sqlx::query(
+        "UPDATE feedbacks SET is_testimonial = NOT is_testimonial WHERE id = ?"
+    )
+    .bind(id)
+    .execute(db.inner())
+    .await
+    .map_err(|_| (Status::InternalServerError, Json(ApiError { error: "Failed to update testimonial status".into() })))?;
+
+    Ok(Json(ApiSuccess { message: "Testimonial status updated.".into() }))
+}
+
+/// Public: list all feedbacks marked as testimonials
+#[get("/testimonials")]
+pub async fn list_testimonials(
+    db: &State<Db>,
+) -> Result<Json<Vec<TestimonialView>>, (Status, Json<ApiError>)> {
+    let testimonials: Vec<TestimonialView> = sqlx::query_as(
+        "SELECT f.id, f.content, f.rating, s.student_name, f.created_at
+         FROM feedbacks f
+         JOIN sit_in_records s ON s.id = f.sitin_id
+         WHERE f.is_testimonial = 1
+         ORDER BY f.created_at DESC"
+    )
+    .fetch_all(db.inner())
+    .await
+    .map_err(|e| {
+        eprintln!("TESTIMONIAL LIST ERROR: {}", e);
+        (Status::InternalServerError, Json(ApiError { error: "Database error".into() }))
+    })?;
+
+    Ok(Json(testimonials))
 }
 
 /// Admin: reply to a feedback (optional remark — not anonymous)
@@ -187,7 +229,7 @@ pub async fn my_feedbacks_full(
         .ok_or((Status::Unauthorized, Json(ApiError { error: "Invalid token".into() })))?;
 
     let entries: Vec<MyFeedbackEntry> = sqlx::query_as(
-        "SELECT f.id, f.sitin_id, s.purpose, s.lab,
+        "SELECT f.id, f.sitin_id, s.purpose, s.lab, s.pc_number,
                 f.content, f.rating, f.admin_reply, f.created_at, f.replied_at
          FROM feedbacks f
          JOIN sit_in_records s ON s.id = f.sitin_id

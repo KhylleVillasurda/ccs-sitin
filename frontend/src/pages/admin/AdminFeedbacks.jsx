@@ -236,7 +236,24 @@ export default function AdminFeedbacks() {
               )}
 
               {/* Action */}
-              <div style={{ padding:'0.65rem 1.1rem', borderTop:'1px solid var(--border)', display:'flex', justifyContent:'flex-end' }}>
+              <div style={{ padding:'0.65rem 1.1rem', borderTop:'1px solid var(--border)', display:'flex', justifyContent:'flex-end', gap:'0.6rem' }}>
+                <button
+                  className="btn btn-ghost btn-sm"
+                  style={{ fontSize:'0.78rem', gap:'0.3rem', color: f.is_testimonial ? 'var(--orange)' : 'var(--fg-dim)' }}
+                  onClick={async () => {
+                    try {
+                      await api.post(`/feedback/${f.id}/testimonial`);
+                      load();
+                    } catch (e) {
+                      setBanner('Failed to update testimonial status.');
+                      setTimeout(() => setBanner(''), 3000);
+                    }
+                  }}
+                  title={f.is_testimonial ? 'Remove from testimonials' : 'Show on landing page'}
+                >
+                  <i className={`bi ${f.is_testimonial ? 'bi-star-fill' : 'bi-star'}`} />
+                  {f.is_testimonial ? 'Featured' : 'Feature'}
+                </button>
                 <button
                   className="btn btn-ghost btn-sm"
                   style={{ fontSize:'0.78rem', gap:'0.3rem' }}

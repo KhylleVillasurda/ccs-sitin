@@ -99,6 +99,12 @@ impl Fairing for DbInitFairing {
             // eprintln!("Migration notice (feedbacks.rating): {}", e);
         }
 
+        if let Err(_e) = sqlx::query(
+            "ALTER TABLE feedbacks ADD COLUMN is_testimonial TINYINT(1) DEFAULT 0"
+        ).execute(pool).await {
+            // eprintln!("Migration notice (feedbacks.is_testimonial): {}", e);
+        }
+
         // ── notifications ─────────────────────────────────────────────────
         sqlx::query(r#"
             CREATE TABLE IF NOT EXISTS notifications (

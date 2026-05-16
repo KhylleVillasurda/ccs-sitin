@@ -196,6 +196,32 @@ pub async fn submit_reservation(
     Ok(Json(ApiSuccess { message: "Reservation request submitted successfully.".into() }))
 }
 
+// ── Student: cancel reservation ──────────────────────────────────────────
+
+#[post("/cancel/<id>")]
+pub async fn cancel_reservation(
+    db: &State<Db>,
+    id: i64,
+    token: BearerToken,
+) -> Result<Json<ApiSuccess>, (Status, Json<ApiError>)> {
+    let claims = verify_token(&token.0)
+        .ok_or((Status::Unauthorized, Json(ApiError { error: "Invalid token".into() })))?;
+
+    // Only allow canceling 'pending' reservations
+    let res = sqlx::query(
+        "UPDATE reservations SET status = 'cancelled', resolved_at = NOW()
+         WHERE id = ? AND student_id = ? AND status = 'pending'"
+    ).bind(id).bind(&claims.sub)
+     .execute(db.inner()).await
+    .map_err(|_| (Status::InternalServerError, Json(ApiError { error: "DB error".into() })))?;
+
+    if res.rows_affected() == 0 {
+        return Err((Status::NotFound, Json(ApiError { error: "Reservation not found or not pending".into() })));
+    }
+
+    Ok(Json(ApiSuccess { message: "Reservation cancelled successfully.".into() }))
+}
+
 // ── Student: view own reservations ──────────────────────────────────────────
 
 #[get("/my")]
