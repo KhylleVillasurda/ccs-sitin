@@ -1,5 +1,4 @@
-use rocket::{http::Status, serde::json::Json};
-use rocket_db_pools::Connection;
+use rocket::{http::Status, serde::json::Json, State};
 use serde::{Deserialize, Serialize};
 use crate::{
     auth::{BearerToken, require_admin, verify_token},
@@ -34,7 +33,7 @@ pub struct LabSoftwareRequest {
 // Accessible to any authenticated user (students need to see this).
 #[get("/?<lab>")]
 pub async fn list_software(
-    mut db: Connection<Db>,
+    db: &State<Db>,
     lab: Option<String>,
     token: BearerToken,
 ) -> Result<Json<Vec<LabSoftware>>, (Status, Json<ApiError>)> {
@@ -45,12 +44,12 @@ pub async fn list_software(
         sqlx::query_as(
             "SELECT id, lab, name, icon, description, version, category
              FROM lab_software WHERE lab = ? ORDER BY category, name"
-        ).bind(l).fetch_all(&mut **db).await
+        ).bind(l).fetch_all(db.inner()).await
     } else {
         sqlx::query_as(
             "SELECT id, lab, name, icon, description, version, category
              FROM lab_software ORDER BY lab, category, name"
-        ).fetch_all(&mut **db).await
+        ).fetch_all(db.inner()).await
     }.map_err(|_| (Status::InternalServerError, Json(ApiError { error: "DB error".into() })))?;
 
     Ok(Json(rows))
@@ -59,7 +58,7 @@ pub async fn list_software(
 // ── POST /api/lab-software  (admin only) ──────────────────────────────────
 #[post("/", data = "<req>")]
 pub async fn add_software(
-    mut db: Connection<Db>,
+    db: &State<Db>,
     req: Json<LabSoftwareRequest>,
     token: BearerToken,
 ) -> Result<Json<LabSoftware>, (Status, Json<ApiError>)> {
@@ -83,7 +82,7 @@ pub async fn add_software(
     .bind(&req.description)
     .bind(&req.version)
     .bind(&req.category)
-    .fetch_one(&mut **db).await
+    .fetch_one(db.inner()).await
     .map_err(|e| {
         eprintln!("ADD SOFTWARE ERROR: {}", e);
         (Status::InternalServerError, Json(ApiError { error: "Failed to add software".into() }))
@@ -91,7 +90,7 @@ pub async fn add_software(
 
     let row: LabSoftware = sqlx::query_as(
         "SELECT id, lab, name, icon, description, version, category FROM lab_software WHERE id = ?"
-    ).bind(id.0).fetch_one(&mut **db).await
+    ).bind(id.0).fetch_one(db.inner()).await
     .map_err(|_| (Status::InternalServerError, Json(ApiError { error: "DB error".into() })))?;
 
     Ok(Json(row))
@@ -100,7 +99,7 @@ pub async fn add_software(
 // ── DELETE /api/lab-software/<id>  (admin only) ──────────────────────────
 #[delete("/<id>")]
 pub async fn remove_software(
-    mut db: Connection<Db>,
+    db: &State<Db>,
     id: i64,
     token: BearerToken,
 ) -> Result<Json<ApiSuccess>, (Status, Json<ApiError>)> {
@@ -108,7 +107,7 @@ pub async fn remove_software(
 
     let result = sqlx::query("DELETE FROM lab_software WHERE id = ?")
         .bind(id)
-        .execute(&mut **db).await
+        .execute(db.inner()).await
         .map_err(|_| (Status::InternalServerError, Json(ApiError { error: "DB error".into() })))?;
 
     if result.rows_affected() == 0 {
@@ -121,7 +120,7 @@ pub async fn remove_software(
 // ── PUT /api/lab-software/<id>  (admin only) ──────────────────────────────
 #[put("/<id>", data = "<req>")]
 pub async fn update_software(
-    mut db: Connection<Db>,
+    db: &State<Db>,
     id: i64,
     req: Json<LabSoftwareRequest>,
     token: BearerToken,
@@ -143,7 +142,7 @@ pub async fn update_software(
     .bind(&req.category)
     .bind(&req.lab)
     .bind(id)
-    .execute(&mut **db).await
+    .execute(db.inner()).await
     .map_err(|_| (Status::InternalServerError, Json(ApiError { error: "Update failed".into() })))?;
 
     Ok(Json(ApiSuccess { message: "Software updated.".into() }))

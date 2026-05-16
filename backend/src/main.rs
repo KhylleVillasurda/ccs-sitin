@@ -1,6 +1,10 @@
 #[macro_use]
 extern crate rocket;
 
+use rocket::{launch, routes};
+use sqlx::mysql::MySqlPoolOptions;
+use std::time::Duration;
+
 mod db;
 mod models;
 mod auth;
@@ -14,16 +18,35 @@ mod notifications;
 mod reservation;
 mod lab_software;
 
-use rocket_db_pools::Database;
-use db::Db;
-
 #[options("/<_..>")]
 fn all_options() -> &'static str { "" }
 
 #[launch]
 async fn rocket() -> _ {
+    // Retrieve database URL from Rocket's configuration
+    let database_url: String = rocket::Config::figment()
+        .extract_inner("databases.main.url")
+        .expect("Database URL not found in Rocket.toml configuration.");
+
+    // Create the MySQL pool
+    let pool = match MySqlPoolOptions::new()
+        .max_connections(5)
+        .min_connections(1)
+        .acquire_timeout(Duration::from_secs(5))
+        .idle_timeout(Duration::from_secs(10 * 60))
+        .max_lifetime(Duration::from_secs(30 * 60))
+        .connect(&database_url)
+        .await
+    {
+        Ok(pool) => pool,
+        Err(e) => {
+            eprintln!("Failed to connect to database: {}", e);
+            panic!("Failed to connect to database: {}", e);
+        }
+    };
+
     rocket::build()
-        .attach(Db::init())
+        .manage(pool) // Manage the MySqlPool instance
         .attach(cors::Cors)
         .attach(db::DbInitFairing)
         .mount("/", routes![all_options])

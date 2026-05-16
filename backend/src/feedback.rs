@@ -1,5 +1,4 @@
-use rocket::{http::Status, serde::json::Json};
-use rocket_db_pools::Connection;
+use rocket::{http::Status, serde::json::Json, State};
 use crate::{
     auth::{require_admin, verify_token},
     db::Db,
@@ -9,7 +8,7 @@ use crate::{
 /// Student submits anonymous feedback (with optional mood rating) for a completed sit-in.
 #[post("/", data = "<req>")]
 pub async fn submit(
-    mut db: Connection<Db>,
+    db: &State<Db>,
     req: Json<FeedbackRequest>,
     token: crate::auth::BearerToken,
 ) -> Result<Json<ApiSuccess>, (Status, Json<ApiError>)> {
@@ -33,7 +32,7 @@ pub async fn submit(
     )
     .bind(req.sitin_id)
     .bind(&claims.sub)
-    .fetch_optional(&mut **db)
+    .fetch_optional(db.inner())
     .await
     .map_err(|_| (Status::InternalServerError, Json(ApiError { error: "Database error".into() })))?;
 
@@ -52,7 +51,7 @@ pub async fn submit(
     )
     .bind(req.sitin_id)
     .bind(&claims.sub)
-    .fetch_one(&mut **db)
+    .fetch_one(db.inner())
     .await
     .map_err(|_| (Status::InternalServerError, Json(ApiError { error: "Database error".into() })))?;
 
@@ -68,7 +67,7 @@ pub async fn submit(
     .bind(&claims.sub)
     .bind(&req.content)
     .bind(req.rating)
-    .execute(&mut **db)
+    .execute(db.inner())
     .await
     .map_err(|_| (Status::InternalServerError, Json(ApiError { error: "Failed to save feedback".into() })))?;
 
@@ -79,7 +78,7 @@ pub async fn submit(
          FROM users WHERE role = 'admin'"
     )
     .bind(format!("/admin/feedbacks?id={}", req.sitin_id))
-    .execute(&mut **db)
+    .execute(db.inner())
     .await
     .ok();
 
@@ -89,7 +88,7 @@ pub async fn submit(
 /// Admin: list all feedbacks (anonymised — no student identity)
 #[get("/")]
 pub async fn list(
-    mut db: Connection<Db>,
+    db: &State<Db>,
     token: crate::auth::BearerToken,
 ) -> Result<Json<Vec<FeedbackView>>, (Status, Json<ApiError>)> {
     require_admin(&token.0)?;
@@ -101,7 +100,7 @@ pub async fn list(
          JOIN sit_in_records s ON s.id = f.sitin_id
          ORDER BY f.created_at DESC"
     )
-    .fetch_all(&mut **db)
+    .fetch_all(db.inner())
     .await
     .map_err(|e| {
         eprintln!("FEEDBACK LIST ERROR: {}", e);
@@ -114,7 +113,7 @@ pub async fn list(
 /// Admin: reply to a feedback (optional remark — not anonymous)
 #[post("/<id>/reply", data = "<req>")]
 pub async fn reply(
-    mut db: Connection<Db>,
+    db: &State<Db>,
     id: i64,
     req: Json<AdminReplyRequest>,
     token: crate::auth::BearerToken,
@@ -125,7 +124,7 @@ pub async fn reply(
         "SELECT id, student_id FROM feedbacks WHERE id = ?"
     )
     .bind(id)
-    .fetch_optional(&mut **db)
+    .fetch_optional(db.inner())
     .await
     .map_err(|_| (Status::InternalServerError, Json(ApiError { error: "Database error".into() })))?;
 
@@ -139,7 +138,7 @@ pub async fn reply(
     )
     .bind(&req.reply)
     .bind(id)
-    .execute(&mut **db)
+    .execute(db.inner())
     .await
     .map_err(|_| (Status::InternalServerError, Json(ApiError { error: "Failed to save reply".into() })))?;
 
@@ -151,7 +150,7 @@ pub async fn reply(
     .bind(&student_id)
     .bind(&msg)
     .bind(format!("/student?feedback={}", id)) // id is the feedback id
-    .execute(&mut **db)
+    .execute(db.inner())
     .await
     .ok();
 
@@ -161,7 +160,7 @@ pub async fn reply(
 /// Student: get list of sitin_ids they've already submitted feedback for
 #[get("/my")]
 pub async fn my_feedbacks(
-    mut db: Connection<Db>,
+    db: &State<Db>,
     token: crate::auth::BearerToken,
 ) -> Result<Json<Vec<i64>>, (Status, Json<ApiError>)> {
     let claims = verify_token(&token.0)
@@ -171,7 +170,7 @@ pub async fn my_feedbacks(
         "SELECT sitin_id FROM feedbacks WHERE student_id = ?"
     )
     .bind(&claims.sub)
-    .fetch_all(&mut **db)
+    .fetch_all(db.inner())
     .await
     .map_err(|_| (Status::InternalServerError, Json(ApiError { error: "Database error".into() })))?;
 
@@ -181,7 +180,7 @@ pub async fn my_feedbacks(
 /// Student: get their full feedback history including admin replies
 #[get("/my/full")]
 pub async fn my_feedbacks_full(
-    mut db: Connection<Db>,
+    db: &State<Db>,
     token: crate::auth::BearerToken,
 ) -> Result<Json<Vec<MyFeedbackEntry>>, (Status, Json<ApiError>)> {
     let claims = verify_token(&token.0)
@@ -196,7 +195,7 @@ pub async fn my_feedbacks_full(
          ORDER BY f.created_at DESC"
     )
     .bind(&claims.sub)
-    .fetch_all(&mut **db)
+    .fetch_all(db.inner())
     .await
     .map_err(|e| {
         eprintln!("MY FEEDBACK FULL ERROR: {}", e);

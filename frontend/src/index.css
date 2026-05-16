@@ -38,6 +38,8 @@
   --orb1-color:  rgba(167,192,128,0.12);
   --orb2-color:  rgba(219,188,127,0.08);
   --orb3-color:  rgba(127,187,179,0.06);
+
+  --highlight-pulse: rgba(219,188,127,0.22);
 }
 
 /* ── Light Theme (Everforest Light) ── */
@@ -72,6 +74,8 @@
   --orb1-color:  rgba(141,161,1,0.08);
   --orb2-color:  rgba(223,160,0,0.07);
   --orb3-color:  rgba(53,167,124,0.06);
+
+  --highlight-pulse: rgba(141,161,1,0.18);
 }
 
 /* ── Light theme surface overrides ── */
@@ -398,12 +402,7 @@ tbody td { padding: 0.75rem 1rem; color: var(--fg); white-space: nowrap; }
 
 /* ─── HIGHLIGHT ROW (feedback) ─── */
 @keyframes highlightPulse {
-  0%   { background: rgba(219,188,127,0.22); }
-  60%  { background: rgba(219,188,127,0.12); }
-  100% { background: transparent; }
-}
-[data-theme="light"] @keyframes highlightPulse {
-  0%   { background: rgba(141,161,1,0.18); }
+  0%   { background: var(--highlight-pulse); }
   100% { background: transparent; }
 }
 tr.highlight-row { animation: highlightPulse 3.5s ease forwards; }

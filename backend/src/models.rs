@@ -169,19 +169,6 @@ pub struct ApiSuccess { pub message: String }
 
 // ── Feedback ────────────────────────────────────────────────────────────────
 
-#[derive(Debug, Serialize, Deserialize, sqlx::FromRow)]
-pub struct Feedback {
-    pub id:          i64,
-    pub sitin_id:    i64,
-    pub content:     String,
-    pub rating:      Option<i32>,
-    pub admin_reply: Option<String>,
-    #[serde(serialize_with = "fmt_dt")]
-    pub created_at:  Option<NaiveDateTime>,
-    #[serde(serialize_with = "fmt_dt")]
-    pub replied_at:  Option<NaiveDateTime>,
-}
-
 /// What admin sees — no student identity
 #[derive(Debug, Serialize, Deserialize, sqlx::FromRow)]
 pub struct FeedbackView {
