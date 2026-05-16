@@ -368,7 +368,7 @@ export default function AdminReservations() {
         <>
           <div style={{ display:'flex', gap:'0.75rem', marginBottom:'1.25rem', alignItems:'center', flexWrap:'wrap' }}>
             <div className="search-bar" style={{ maxWidth:260 }}>
-              <span style={{ color:'var(--fg-dim)', fontSize:'0.9rem' }}>🔍</span>
+              <span style={{ color:'var(--fg-dim)', fontSize:'0.9rem' }}><i className="bi bi-search" /></span>
               <input value={searchInput} onChange={e => setSearchInput(e.target.value)} placeholder="Search by name, ID, lab…" />
             </div>
             <div style={{ display:'flex', gap:'0.4rem' }}>

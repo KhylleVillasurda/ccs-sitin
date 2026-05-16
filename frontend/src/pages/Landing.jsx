@@ -6,7 +6,13 @@ import api from '../api'
 import UserAvatar from '../components/UserAvatar'
 import './Landing.css'
 
-const MEDALS = ['🥇', '🥈', '🥉', '4th', '5th']
+const MEDALS = [
+  <i className="bi bi-trophy-fill" style={{ color: '#FFD700' }} />,
+  <i className="bi bi-trophy-fill" style={{ color: '#C0C0C0' }} />,
+  <i className="bi bi-trophy-fill" style={{ color: '#CD7F32' }} />,
+  '4th',
+  '5th'
+]
 
 export default function Landing() {
   const { user } = useAuth()
